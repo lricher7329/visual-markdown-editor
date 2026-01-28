@@ -1,0 +1,123 @@
+body {
+    padding: 0;
+}
+
+.vditor * {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", "Helvetica", "Arial", "Microsoft YaHei", sans-serif;
+}
+
+code {
+    color: #24292e;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* Hide ID input hint and down arrow in panels */
+.vditor-panel span[aria-label="ID<Alt+Enter>"],
+.vditor-panel .vditor-icon[data-type="down"] {
+    display: none !important;
+}
+
+/* Hide dropdown header text and expand button for custom toolbar menus */
+.vditor-panel--arrow > .vditor-panel--arrow__header,
+.vditor-panel--arrow > span:first-child,
+.vditor-panel--arrow > button[data-type="expand"] {
+    display: none !important;
+}
+
+/* Also target the header/label text that appears at top of dropdown */
+.vditor-toolbar__item .vditor-panel > span:first-of-type:not(.vditor-tooltipped),
+.vditor-toolbar__item .vditor-panel > .vditor-panel__header {
+    display: none !important;
+}
+
+/* Hide tooltip on toolbar button when its dropdown is open */
+.vditor-toolbar__item .vditor-tooltipped:hover::after,
+.vditor-toolbar__item .vditor-tooltipped:focus::after,
+.vditor-toolbar__item .vditor-tooltipped:active::after {
+    display: none !important;
+}
+
+/* Hide expand/collapse button (up arrow) in hint dropdowns */
+.vditor-hint button[data-type="expand"],
+.vditor-hint > button:nth-child(2),
+.vditor-hint button:empty,
+.vditor-hint button[aria-label="expand"],
+.vditor-hint button[aria-label="↑"],
+.vditor-hint button svg[data-icon="up"],
+.vditor-hint .vditor-icon--expand {
+    display: none !important;
+}
+
+/* Hide arrow button by matching its small width (single character) */
+/* Exclude buttons with data-type for insert menu items and data-tag for heading levels */
+.vditor-hint button:not([data-type="link"]):not([data-type="upload"]):not([data-type="quote"]):not([data-type="code"]):not([data-type="inline-code"]):not([data-type="line"]):not([data-type="table"]):not([data-tag="h1"]):not([data-tag="h2"]):not([data-tag="h3"]):not([data-tag="h4"]):not([data-tag="h5"]):not([data-tag="h6"]) {
+    display: none !important;
+}
+
+/* Dropdown menu theme matching */
+.vditor-hint {
+    background-color: var(--vscode-dropdown-background, var(--panel-background)) !important;
+    border: 1px solid var(--vscode-dropdown-border, var(--panel-border)) !important;
+}
+
+.vditor-hint button {
+    color: var(--vscode-dropdown-foreground, var(--panel-foreground)) !important;
+}
+
+.vditor-hint button:hover {
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.2)) !important;
+}
+
+.vditor-reset {
+    padding: 0 5% !important;
+}
+
+.win32 * {
+    text-shadow: 0 0 0.55px #7c7c7cdd;
+}
+
+.vditor-toolbar__item .vditor-tooltipped[data-type="selectTheme"] {
+    width: 55px;
+    font-size: 14px;
+}
+
+html {
+    scrollbar-color: unset;
+}
+
+/* Code block copy button */
+.vditor-wysiwyg__preview {
+    position: relative;
+}
+
+.code-block-copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--vscode-button-foreground, #fff);
+    background-color: var(--vscode-button-secondaryBackground, rgba(90, 93, 94, 0.8));
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.vditor-wysiwyg__preview:hover > .code-block-copy-btn,
+.code-block-copy-btn:focus {
+    opacity: 1;
+}
+
+.code-block-copy-btn:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground, rgba(90, 93, 94, 1));
+}
+
+.code-block-copy-btn.copied {
+    background-color: var(--vscode-testing-iconPassed, #73c991);
+}

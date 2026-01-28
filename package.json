@@ -1,0 +1,419 @@
+{
+	"name": "md-editor",
+	"displayName": "Markdown Editor",
+	"description": "View and edit markdown with WYSIWYG editor.",
+	"version": "2.3.0",
+	"publisher": "lricher7329",
+	"icon": "images/logo.png",
+	"engines": {
+		"vscode": "^1.64.0"
+	},
+	"keywords": [
+		"markdown",
+		"viewer",
+		"editor"
+	],
+	"categories": [
+		"Visualization",
+		"Other"
+	],
+	"bugs": {
+		"url": "https://github.com/lricher7329/md-editor/issues"
+	},
+	"homepage": "https://github.com/lricher7329/md-editor#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/lricher7329/md-editor.git"
+	},
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"themes": [
+			{
+				"label": "One Dark Modern",
+				"uiTheme": "vs-dark",
+				"path": "./theme/onedark-modern.json"
+			},
+			{
+				"label": "One Dark Modern Classic",
+				"uiTheme": "vs-dark",
+				"path": "./theme/onedark-modern-classic.json"
+			}
+		],
+		"iconThemes": [
+			{
+				"id": "office-material-icon-theme",
+				"label": "Office Material Icon Theme",
+				"path": "./theme/material-icons.json",
+				"_watch": true
+			}
+		],
+		"commands": [
+			{
+				"command": "document-viewer.markdown.switch",
+				"title": "Switch markdown editor",
+				"icon": {
+					"dark": "./images/switch.svg",
+					"light": "./images/switch_light.svg"
+				}
+			},
+			{
+				"command": "document-viewer.markdown.paste",
+				"title": "Enhance paste in markdown"
+			},
+			{
+				"command": "document-viewer.openInTypora",
+				"title": "Open in Typora",
+				"category": "Markdown Editor"
+			},
+			{
+				"command": "document-viewer.zotero.detect",
+				"title": "Detect Zotero Installation",
+				"category": "Markdown Editor"
+			},
+			{
+				"command": "document-viewer.zotero.refresh",
+				"title": "Refresh Zotero Library",
+				"category": "Markdown Editor"
+			},
+			{
+				"command": "document-viewer.zotero.showOutput",
+				"title": "Show Zotero Log",
+				"category": "Markdown Editor"
+			},
+			{
+				"command": "document-viewer.zotero.insertCitation",
+				"title": "Insert Zotero Citation",
+				"category": "Markdown Editor"
+			},
+			{
+				"command": "document-viewer.export",
+				"title": "Export...",
+				"category": "Markdown Editor",
+				"icon": "$(desktop-download)"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "document-viewer.markdown.paste",
+				"key": "ctrl+v",
+				"mac": "cmd+v",
+				"when": "!terminalFocus && !filesExplorerFocus && resourceLangId == markdown"
+			},
+			{
+				"command": "document-viewer.markdown.switch",
+				"key": "ctrl+alt+e",
+				"mac": "ctrl+cmd+e",
+				"when": "editorTextFocus && editorLangId == markdown"
+			},
+			{
+				"command": "document-viewer.zotero.insertCitation",
+				"key": "ctrl+shift+z",
+				"mac": "cmd+shift+z",
+				"when": "activeCustomEditorId == 'document-viewer.markdownEditor'"
+			}
+		],
+		"menus": {
+			"editor/title": [
+				{
+					"command": "document-viewer.markdown.switch",
+					"when": "resourceExtname == '.md'",
+					"group": "navigation@-2"
+				},
+				{
+					"command": "document-viewer.export",
+					"when": "activeCustomEditorId == 'document-viewer.markdownEditor'",
+					"group": "navigation@-1"
+				}
+			],
+			"editor/context": [
+				{
+					"command": "document-viewer.openInTypora",
+					"when": "resourceLangId == markdown",
+					"group": "navigation"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "document-viewer.openInTypora",
+					"when": "resourceLangId == markdown",
+					"group": "navigation"
+				}
+			]
+		},
+		"customEditors": [
+			{
+				"viewType": "document-viewer.markdownEditor",
+				"displayName": "Markdown Editor",
+				"selector": [
+					{
+						"filenamePattern": "file:/**/*.md"
+					},
+					{
+						"filenamePattern": "file:/**/*.markdown"
+					}
+				]
+			},
+			{
+				"viewType": "document-viewer.markdownEditor.optional",
+				"displayName": "Markdown Editor (Optional)",
+				"priority": "option",
+				"selector": [
+					{
+						"filenamePattern": "*.md"
+					},
+					{
+						"filenamePattern": "*.markdown"
+					}
+				]
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Document Viewer",
+			"properties": {
+				"document-viewer.viewAbsoluteLocal": {
+					"type": "boolean",
+					"default": false,
+					"description": "Support view absolute path image from markdown viewer."
+				},
+				"document-viewer.chromiumPath": {
+					"type": "string",
+					"description": "Set the chromium browser location for exporting markdown pdf."
+				},
+				"document-viewer.pdfMarginTop": {
+					"type": "integer",
+					"default": 25,
+					"description": "Printed pdf default top margin."
+				},
+				"document-viewer.openOutline": {
+					"type": "boolean",
+					"default": true,
+					"description": "Open markdown outline."
+				},
+				"document-viewer.hideToolbar": {
+					"type": "boolean",
+					"default": false,
+					"description": "Hide markdown toolbar."
+				},
+				"document-viewer.previewCode": {
+					"type": "boolean",
+					"default": true,
+					"description": "Preview code in markdown."
+				},
+				"document-viewer.preventMacOptionKey": {
+					"type": "boolean",
+					"default": true,
+					"description": "Prevent MacOS option key in the markdown editor."
+				},
+				"document-viewer.editorTheme": {
+					"type": "string",
+					"enum": [
+						"Auto",
+						"Light",
+						"Solarized"
+					],
+					"default": "Auto",
+					"markdownDescription": "The theme for the Markdown editor."
+				},
+				"document-viewer.previewCodeHighlight.style": {
+					"type": "string",
+					"enum": [
+						"abap",
+						"algol",
+						"algol_nu",
+						"arduino",
+						"autumn",
+						"borland",
+						"bw",
+						"colorful",
+						"dracula",
+						"emacs",
+						"friendly",
+						"fruity",
+						"github",
+						"igor",
+						"lovelace",
+						"manni",
+						"monokai",
+						"monokailight",
+						"murphy",
+						"native",
+						"paraiso-dark",
+						"paraiso-light",
+						"pastie",
+						"perldoc",
+						"pygments",
+						"rainbow_dash",
+						"rrt",
+						"solarized-dark",
+						"solarized-dark256",
+						"solarized-light",
+						"swapoff",
+						"tango",
+						"trac",
+						"vim",
+						"vs",
+						"xcode",
+						"ant-design"
+					],
+					"default": "dracula",
+					"markdownDescription": "Default syntax highlight style of markdown preview code. Refer to [Chroma Style Gallery](https://xyproto.github.io/splash/docs/longer/all.html). Only applies when `#document-viewer.previewCode#` is enabled."
+				},
+				"document-viewer.previewCodeHighlight.showLineNumber": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Show line numbers in markdown preview code window. Only applies when `#document-viewer.previewCode#` is enabled."
+				},
+				"document-viewer.editorLanguage": {
+					"type": "string",
+					"enum": [
+						"en_US",
+						"ja_JP",
+						"ko_KR",
+						"ru_RU",
+						"zh_CN",
+						"zh_TW"
+					],
+					"default": "en_US",
+					"description": "You could change your editor language."
+				},
+				"document-viewer.workspacePathAsImageBasePath": {
+					"type": "boolean",
+					"default": false,
+					"description": "Using workspace path as markdown image base path."
+				},
+				"document-viewer.pasterImgPath": {
+					"type": "string",
+					"default": "image/${fileName}/${now}.png",
+					"description": "Markdown paste image path, variables: workspaceDir, fileName, now."
+				},
+				"document-viewer.zotero.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Zotero citation integration."
+				},
+				"document-viewer.zotero.autoDetect": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically detect Zotero data directory location. When enabled, manual path settings are ignored."
+				},
+				"document-viewer.zotero.zoteroDbPath": {
+					"type": "string",
+					"default": "~/Zotero/zotero.sqlite",
+					"description": "Path to Zotero database file (only used when autoDetect is disabled)."
+				},
+				"document-viewer.zotero.betterBibtexDbPath": {
+					"type": "string",
+					"default": "~/Zotero/better-bibtex.sqlite",
+					"description": "Path to Better BibTeX database file (only used when autoDetect is disabled)."
+				},
+				"document-viewer.zotero.linkedAttachmentsBasePath": {
+					"type": "string",
+					"default": "",
+					"description": "Base path for linked file attachments. Required if you use linked files instead of stored copies in Zotero."
+				},
+				"document-viewer.zotero.libraryFilter": {
+					"type": "string",
+					"enum": [
+						"all",
+						"personal",
+						"group"
+					],
+					"default": "all",
+					"description": "Filter citations by library type: 'all' shows everything, 'personal' shows only your library, 'group' shows only group libraries."
+				},
+				"document-viewer.zotero.showStatusBar": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Zotero connection status in the status bar."
+				},
+				"document-viewer.zotero.cacheTtlMinutes": {
+					"type": "number",
+					"default": 5,
+					"minimum": 1,
+					"maximum": 60,
+					"description": "How long to cache Zotero items (in minutes) before refreshing from the database."
+				},
+				"document-viewer.pandoc.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Pandoc-based export with citation processing. Requires Pandoc to be installed."
+				},
+				"document-viewer.pandoc.path": {
+					"type": "string",
+					"default": "",
+					"description": "Path to Pandoc executable. Leave empty for auto-detection from PATH."
+				},
+				"document-viewer.pandoc.cslStyle": {
+					"type": "string",
+					"default": "apa",
+					"markdownDescription": "Citation style for Pandoc export. Use a bundled style name (`apa`, `chicago`, `chicago-author-date`, `vancouver`, `ieee`, `nature`, `mla`) or provide an absolute/workspace-relative path to a custom `.csl` file."
+				},
+				"document-viewer.pandoc.referenceDoc": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "Path to a custom DOCX template for Pandoc export. The template controls fonts, margins, and styles. Leave empty to use Pandoc's default. See [Pandoc documentation](https://pandoc.org/MANUAL.html#option--reference-doc) for details."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"dev": "vite --mode=development",
+		"lint:fix": "eslint src/**/*.ts --fix",
+		"build": "rm -rf out && vite build --mode=production",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"package": "vsce package --no-dependencies -o md-editor.vsix",
+		"publish": "vsce publish --no-dependencies",
+		"vscode:prepublish": "yarn run build"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"@types/react": "^18.2.66",
+		"@types/react-dom": "^18.2.22",
+		"@types/vscode": "^1.64.0",
+		"@typescript-eslint/eslint-plugin": "^7.1.1",
+		"@typescript-eslint/parser": "^7.1.1",
+		"@vitejs/plugin-react": "^4.2.1",
+		"esbuild": "^0.14.54",
+		"esbuild-plugin-copy": "^1.3.0",
+		"eslint": "^8.57.0",
+		"eslint-plugin-import": "^2.29.1",
+		"eslint-plugin-react": "^7.34.1",
+		"eslint-plugin-react-hooks": "^4.6.0",
+		"eslint-plugin-react-refresh": "^0.4.6",
+		"eslint-plugin-unused-imports": "^3.1.0",
+		"less": "^4.2.0",
+		"vite": "^6.2.5",
+		"vitest": "^2.0.0"
+	},
+	"dependencies": {
+		"@ant-design/icons": "^5.3.5",
+		"antd": "^5.15.4",
+		"axios": "^1.4.0",
+		"cheerio": "^1.0.0",
+		"chrome-finder": "^1.0.7",
+		"date-format": "^4.0.14",
+		"file-type": "^19.6.0",
+		"fuse.js": "^7.1.0",
+		"highlight.js": "^11.10.0",
+		"iconv-lite": "^0.6.3",
+		"katex": "^0.16.2",
+		"markdown-it": "^14.1.0",
+		"markdown-it-anchor": "^9.2.0",
+		"markdown-it-checkbox": "^1.1.0",
+		"markdown-it-mermaid": "^0.2.5",
+		"markdown-it-plantuml": "^1.4.1",
+		"markdown-it-toc-done-right": "^4.2.0",
+		"mustache": "^4.0.1",
+		"pdf-lib": "^1.11.2",
+		"puppeteer-core": "^1.20.0",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"sql.js": "^1.13.0",
+		"vscode-html-to-docx": "^1.1.2"
+	}
+}
