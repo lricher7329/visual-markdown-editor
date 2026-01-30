@@ -1,9 +1,9 @@
 {
-	"name": "md-editor",
-	"displayName": "Markdown Editor",
+	"name": "visual-markdown-editor",
+	"displayName": "Visual Markdown Editor",
 	"description": "View and edit markdown with WYSIWYG editor.",
 	"version": "2.3.0",
-	"publisher": "lricher7329",
+	"publisher": "LawrenceRicher",
 	"icon": "images/logo.png",
 	"engines": {
 		"vscode": "^1.64.0"
@@ -18,12 +18,12 @@
 		"Other"
 	],
 	"bugs": {
-		"url": "https://github.com/lricher7329/md-editor/issues"
+		"url": "https://github.com/lricher7329/visual-markdown-editor/issues"
 	},
-	"homepage": "https://github.com/lricher7329/md-editor#readme",
+	"homepage": "https://github.com/lricher7329/visual-markdown-editor#readme",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/lricher7329/md-editor.git"
+		"url": "https://github.com/lricher7329/visual-markdown-editor.git"
 	},
 	"activationEvents": [
 		"onStartupFinished"
@@ -366,7 +366,7 @@
 		"build": "rm -rf out && vite build --mode=production",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"package": "vsce package --no-dependencies -o md-editor.vsix",
+		"package": "vsce package --no-dependencies -o visual-markdown-editor.vsix",
 		"publish": "vsce publish --no-dependencies",
 		"vscode:prepublish": "yarn run build"
 	},

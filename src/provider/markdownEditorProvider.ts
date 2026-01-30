@@ -319,7 +319,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         } else {
             // For non-Pandoc exports, we need access to the context
             // This is a limitation - we'll show a message for now
-            const markdownService = new MarkdownService(vscode.extensions.getExtension('md-editor.md-editor')?.extensionUri
+            const markdownService = new MarkdownService(vscode.extensions.getExtension('LawrenceRicher.visual-markdown-editor')?.extensionUri
                 ? { extensionPath, extensionUri: vscode.Uri.file(extensionPath) } as vscode.ExtensionContext
                 : undefined as any);
             markdownService.exportMarkdown(uri, { type: exportType });
