@@ -101,4 +101,6 @@ Global.getConfig('editorTheme')  // src/common/global.ts
 
 - Use yarn (not npm)
 - Commit messages in English, max 70 characters
-- When bumping the version in `package.json`, always add a corresponding entry to `changelog.md` following the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
+- When bumping the version in `package.json`, always:
+  1. Add a corresponding entry to `changelog.md` following the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
+  2. After committing, create and push a git tag (`git tag v<version> && git push origin v<version>`) to trigger the publish workflow
