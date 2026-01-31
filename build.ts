@@ -1,6 +1,6 @@
 const { build, context } = require("esbuild")
 const { resolve } = require("path")
-const { existsSync } = require("fs")
+const { existsSync, readFileSync, writeFileSync } = require("fs")
 const { copy } = require("esbuild-plugin-copy")
 const isProd = process.argv.indexOf('--mode=production') >= 0;
 
@@ -41,11 +41,21 @@ async function main() {
             }),
             {
                 name: 'build notice',
-                setup(build) {
+                setup(build: any) {
                     build.onStart(() => {
                         console.log('build start')
                     })
                     build.onEnd(() => {
+                        // Strip "use strict" from output to avoid breaking legacy
+                        // dependencies (d3 v3 via mermaid) that use `this.document`
+                        // in IIFEs — strict mode makes `this` undefined in such contexts
+                        const outPath = resolve("out/extension.js")
+                        if (existsSync(outPath)) {
+                            const content = readFileSync(outPath, 'utf8')
+                            if (content.startsWith('"use strict";')) {
+                                writeFileSync(outPath, content.replace(/^"use strict";/, ''))
+                            }
+                        }
                         console.log('build success')
                     })
                 }
@@ -69,7 +79,7 @@ function createLib() {
             point[dependency] = mainAbsPath;
         }
         return point;
-    }, {})
+    }, {} as Record<string, string>)
     build({
         entryPoints: points,
         bundle: true,

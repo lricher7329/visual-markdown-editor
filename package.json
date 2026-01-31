@@ -2,7 +2,7 @@
 	"name": "visual-markdown-editor",
 	"displayName": "Visual Markdown Editor",
 	"description": "View and edit markdown with WYSIWYG editor.",
-	"version": "2.3.2",
+	"version": "2.3.3",
 	"publisher": "LawrenceRicher",
 	"icon": "images/logo.png",
 	"engines": {
@@ -31,7 +31,9 @@
 		"url": "https://github.com/lricher7329/visual-markdown-editor.git"
 	},
 	"activationEvents": [
-		"onLanguage:markdown"
+		"onLanguage:markdown",
+		"onCustomEditor:document-viewer.markdownEditor",
+		"onCustomEditor:document-viewer.markdownEditor.optional"
 	],
 	"main": "./out/extension.js",
 	"contributes": {

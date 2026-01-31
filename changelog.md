@@ -5,6 +5,12 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.3] - 2026-01-31
+
+### Fixed
+- Extension failing to open markdown files due to esbuild 0.24 adding `"use strict"` to CJS output, which broke D3 v3 (transitive dependency via mermaid) IIFE patterns
+- Added explicit `onCustomEditor` activation events for compatibility with VS Code < 1.75
+
 ## [2.3.2] - 2026-01-31
 
 ### Changed

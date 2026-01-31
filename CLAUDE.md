@@ -101,3 +101,4 @@ Global.getConfig('editorTheme')  // src/common/global.ts
 
 - Use yarn (not npm)
 - Commit messages in English, max 70 characters
+- When bumping the version in `package.json`, always add a corresponding entry to `changelog.md` following the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
