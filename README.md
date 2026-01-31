@@ -1,4 +1,4 @@
-# Markdown Editor
+# Visual Markdown Editor
 
 A VS Code extension for WYSIWYG markdown editing, powered by [Vditor](https://github.com/Vanessa219/vditor).
 
@@ -167,6 +167,7 @@ Or use "Open With..." to choose an editor per file.
 ## Troubleshooting
 
 **Zotero citations not working:**
+
 - Ensure [Zotero](https://www.zotero.org/) is installed and has been opened at least once
 - Install the [Better BibTeX](https://retorque.re/zotero-better-bibtex/) plugin in Zotero
 - Run the `Markdown Editor: Detect Zotero Installation` command to verify detection
@@ -174,15 +175,18 @@ Or use "Open With..." to choose an editor per file.
 - If Zotero is running, the database may be slightly stale — use `Markdown Editor: Refresh Zotero Library` to reload
 
 **Pandoc export fails:**
+
 - Verify Pandoc is installed: run `pandoc --version` in a terminal
 - For PDF export, a LaTeX distribution with XeLaTeX is required (e.g., [TeX Live](https://tug.org/texlive/), [MiKTeX](https://miktex.org/))
 - If Pandoc is not on your PATH, set `document-viewer.pandoc.path` to the full executable path
 
 **PDF export without Pandoc fails:**
+
 - A Chromium-based browser (Chrome, Edge, or Brave) must be installed
 - If auto-detection fails, set `document-viewer.chromiumPath` to the browser executable path
 
 **Editor not opening for markdown files:**
+
 - Check your `workbench.editorAssociations` setting — if set to `"default"`, the built-in editor takes priority
 - Use "Open With..." from the file context menu to choose the Visual Markdown Editor
 
