@@ -212,7 +212,9 @@ export class MarkdownService {
 
     public switchEditor(uri: vscode.Uri): void {
         const editor = vscode.window.activeTextEditor;
-        if (!uri) uri = editor?.document.uri;
+        if (!uri) {
+            uri = editor?.document.uri as vscode.Uri;
+        }
         const type = editor ? 'cweijan.markdownViewer' : 'default';
         vscode.commands.executeCommand('vscode.openWith', uri, type);
     }

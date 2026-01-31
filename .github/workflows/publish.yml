@@ -1,0 +1,43 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn test
+
+      - run: yarn build
+
+      - run: yarn package
+
+      - name: Publish to VS Code Marketplace
+        if: success()
+        run: npx @vscode/vsce publish --no-dependencies --packagePath visual-markdown-editor.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX
+        if: success()
+        run: npx ovsx publish visual-markdown-editor.vsix -p ${{ secrets.OVSX_PAT }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: visual-markdown-editor.vsix
+          generate_release_notes: true

@@ -79,8 +79,6 @@ class ZoteroLogger {
             this.outputChannel.appendLine(formattedMessage);
         }
 
-        // Also log to console for development
-        console.log(`[Zotero] ${formattedMessage}`);
     }
 
     /**

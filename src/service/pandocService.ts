@@ -7,7 +7,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import { generateBibFile, extractCitations } from './zotero/bibTexService';
@@ -192,7 +191,7 @@ export async function exportWithPandoc(
                 if (action === 'Cancel') {
                     // Clean up temp bib file
                     if (bibFilePath) {
-                        await fs.unlink(bibFilePath).catch(() => {});
+                        await fs.unlink(bibFilePath).catch(() => { /* ignore cleanup errors */ });
                     }
                     return {
                         success: false,
@@ -300,7 +299,7 @@ export async function exportWithPandoc(
 
         // Clean up temp bib file
         if (bibFilePath) {
-            await fs.unlink(bibFilePath).catch(() => {});
+            await fs.unlink(bibFilePath).catch(() => { /* ignore cleanup errors */ });
         }
 
         vscode.window.showInformationMessage(

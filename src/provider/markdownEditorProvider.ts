@@ -321,7 +321,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             // This is a limitation - we'll show a message for now
             const markdownService = new MarkdownService(vscode.extensions.getExtension('LawrenceRicher.visual-markdown-editor')?.extensionUri
                 ? { extensionPath, extensionUri: vscode.Uri.file(extensionPath) } as vscode.ExtensionContext
-                : undefined as any);
+                : undefined as unknown as vscode.ExtensionContext);
             markdownService.exportMarkdown(uri, { type: exportType });
         }
     }
