@@ -5,6 +5,12 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-01-31
+
+### Changed
+- CI/CD workflows now install vsce/ovsx before package step
+- Added yarn.lock to repository for reproducible builds
+
 ## [2.3.1] - 2026-01-31
 
 ### Changed
@@ -130,5 +136,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ant Design UI components in webview
 - Modular service layer (Markdown, Comment, Zotero, Pandoc)
 
+[2.3.2]: https://github.com/lricher7329/visual-markdown-editor/releases/tag/v2.3.2
 [2.3.1]: https://github.com/lricher7329/visual-markdown-editor/releases/tag/v2.3.1
 [2.3.0]: https://github.com/lricher7329/visual-markdown-editor/releases/tag/v2.3.0

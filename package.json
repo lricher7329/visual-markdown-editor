@@ -2,7 +2,7 @@
 	"name": "visual-markdown-editor",
 	"displayName": "Visual Markdown Editor",
 	"description": "View and edit markdown with WYSIWYG editor.",
-	"version": "2.3.1",
+	"version": "2.3.2",
 	"publisher": "LawrenceRicher",
 	"icon": "images/logo.png",
 	"engines": {
