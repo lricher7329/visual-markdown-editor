@@ -24,15 +24,18 @@ jobs:
 
       - run: yarn package
 
+      - name: Install publishing tools
+        run: npm install -g @vscode/vsce ovsx
+
       - name: Publish to VS Code Marketplace
         if: success()
-        run: npx @vscode/vsce publish --no-dependencies --packagePath visual-markdown-editor.vsix
+        run: vsce publish --no-dependencies --packagePath visual-markdown-editor.vsix
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Publish to Open VSX
         if: success()
-        run: npx ovsx publish visual-markdown-editor.vsix -p ${{ secrets.OVSX_PAT }}
+        run: ovsx publish visual-markdown-editor.vsix -p ${{ secrets.OVSX_PAT }}
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
