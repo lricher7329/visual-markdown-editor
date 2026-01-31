@@ -18,14 +18,14 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
+      - name: Install publishing tools
+        run: npm install -g @vscode/vsce ovsx
+
       - run: yarn test
 
       - run: yarn build
 
       - run: yarn package
-
-      - name: Install publishing tools
-        run: npm install -g @vscode/vsce ovsx
 
       - name: Publish to VS Code Marketplace
         if: success()

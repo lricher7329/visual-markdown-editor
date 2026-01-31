@@ -19,6 +19,9 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
       - run: yarn lint:fix
 
       - run: yarn test
