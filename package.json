@@ -2,11 +2,11 @@
 	"name": "visual-markdown-editor",
 	"displayName": "Visual Markdown Editor",
 	"description": "View and edit markdown with WYSIWYG editor.",
-	"version": "2.3.3",
+	"version": "2.3.4",
 	"publisher": "LawrenceRicher",
 	"icon": "images/logo.png",
 	"engines": {
-		"vscode": "^1.64.0"
+		"vscode": "^1.75.0"
 	},
 	"keywords": [
 		"markdown",
@@ -30,11 +30,6 @@
 		"type": "git",
 		"url": "https://github.com/lricher7329/visual-markdown-editor.git"
 	},
-	"activationEvents": [
-		"onLanguage:markdown",
-		"onCustomEditor:document-viewer.markdownEditor",
-		"onCustomEditor:document-viewer.markdownEditor.optional"
-	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"themes": [

@@ -5,6 +5,12 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4] - 2026-01-31
+
+### Changed
+- Bumped minimum VS Code engine version from ^1.64.0 to ^1.75.0
+- Removed explicit `activationEvents` array (VS Code ≥1.75 auto-generates from contribution declarations)
+
 ## [2.3.3] - 2026-01-31
 
 ### Fixed
