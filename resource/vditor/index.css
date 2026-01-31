@@ -53,7 +53,7 @@ a {
 
 /* Hide arrow button by matching its small width (single character) */
 /* Exclude buttons with data-type for insert menu items and data-tag for heading levels */
-.vditor-hint button:not([data-type="link"]):not([data-type="upload"]):not([data-type="quote"]):not([data-type="code"]):not([data-type="inline-code"]):not([data-type="line"]):not([data-type="table"]):not([data-tag="h1"]):not([data-tag="h2"]):not([data-tag="h3"]):not([data-tag="h4"]):not([data-tag="h5"]):not([data-tag="h6"]) {
+.vditor-hint button:not([data-type="link"]):not([data-type="quote"]):not([data-type="code"]):not([data-type="inline-code"]):not([data-type="line"]):not([data-type="table"]):not([data-tag="h1"]):not([data-tag="h2"]):not([data-tag="h3"]):not([data-tag="h4"]):not([data-tag="h5"]):not([data-tag="h6"]) {
     display: none !important;
 }
 

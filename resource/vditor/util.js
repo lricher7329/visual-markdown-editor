@@ -202,7 +202,6 @@ export async function getToolbar() {
             icon: icons.insert,
             toolbar: [
                 "link",
-                "upload",
                 "quote",
                 "code",
                 "inline-code",
@@ -562,6 +561,13 @@ export const autoSymbol = (handler, editor, config) => {
                         document.execCommand("delete")
                     }
                     e.preventDefault();
+                    break;
+                case 'KeyK':
+                    // Insert link (Cmd+K / Ctrl+K)
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const linkBtn = document.querySelector('button[data-type="link"]');
+                    if (linkBtn) linkBtn.click();
                     break;
             }
         }
