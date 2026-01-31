@@ -1,4 +1,12 @@
 {
   "version": "1.0",
-  "comments": []
+  "comments": [
+    {
+      "id": "ml2gd7szcfqko34z3",
+      "line": 1,
+      "text": "add comment",
+      "selectedText": "workflow",
+      "timestamp": "2026-01-31T15:14:22.019Z"
+    }
+  ]
 }
