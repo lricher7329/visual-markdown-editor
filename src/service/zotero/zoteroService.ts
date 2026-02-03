@@ -2,6 +2,7 @@
  * Zotero database service for citation management
  */
 import * as fs from 'fs/promises';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import initSqlJs, { Database, QueryExecResult } from 'sql.js';
@@ -228,9 +229,32 @@ export class ZoteroService {
         zoteroLogger.setStatus({ status: 'connecting', message: 'Connecting to databases...' });
 
         try {
-            // Check if files exist
-            await fs.access(this.options.zoteroDbPath);
-            await fs.access(this.options.betterBibtexDbPath);
+            // Check if files exist and get their sizes
+            const [zoteroStat, bbtStat] = await Promise.all([
+                fs.stat(this.options.zoteroDbPath),
+                fs.stat(this.options.betterBibtexDbPath)
+            ]);
+
+            // Warn if databases are large relative to available memory
+            const totalDbSize = zoteroStat.size + bbtStat.size;
+            const LARGE_DB_THRESHOLD = 100 * 1024 * 1024; // 100 MB
+            if (totalDbSize > LARGE_DB_THRESHOLD) {
+                const freeMemory = os.freemem();
+                if (totalDbSize > freeMemory * 0.25) {
+                    const dbMB = Math.round(totalDbSize / (1024 * 1024));
+                    const freeMB = Math.round(freeMemory / (1024 * 1024));
+                    zoteroLogger.warn(`Large database (${dbMB} MB) with limited free memory (${freeMB} MB)`);
+                    const choice = await vscode.window.showWarningMessage(
+                        `Zotero database is ${dbMB} MB but only ${freeMB} MB of memory is free. Loading may cause performance issues.`,
+                        'Load Anyway', 'Cancel'
+                    );
+                    if (choice !== 'Load Anyway') {
+                        zoteroLogger.info('User cancelled loading due to memory constraints');
+                        zoteroLogger.setStatus({ status: 'disconnected', message: 'Loading cancelled (memory)' });
+                        return false;
+                    }
+                }
+            }
 
             // Check for database lock (Zotero running)
             const lockCheck = await this.checkDatabaseLock();
