@@ -5,6 +5,16 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-02-06
+
+### Added
+- Support for `.qmd` (Quarto markdown) files as an optional editor
+- Editable language label on code blocks (appears below block on hover, click to change language)
+
+### Fixed
+- Stray character overlapping "Copy" button on code blocks (hidden Vditor's built-in copy overlay)
+- Copy button and language label now appear on newly inserted code blocks (debounced observer)
+
 ## [2.3.5] - 2026-01-31
 
 ### Fixed

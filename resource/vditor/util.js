@@ -1334,6 +1334,136 @@ function addCopyButtonToCodeBlock(preElement) {
     preElement.appendChild(copyBtn);
 }
 
+// ============================================
+// Code Block Language Label
+// ============================================
+
+/**
+ * Get the current language from a code block preview element
+ */
+function getCodeBlockLanguage(previewElement) {
+    const codeEl = previewElement.querySelector('code[class*="language-"]');
+    if (!codeEl) return '';
+    const match = codeEl.className.match(/language-(\S+)/);
+    return match ? match[1] : '';
+}
+
+/**
+ * Add an editable language label below a code block
+ */
+function addLanguageLabelToCodeBlock(previewElement) {
+    const block = previewElement.closest('.vditor-wysiwyg__block');
+    if (!block) return;
+    if (block.querySelector('.code-block-lang-label')) return;
+
+    const lang = getCodeBlockLanguage(previewElement);
+
+    const label = document.createElement('span');
+    label.className = 'code-block-lang-label' + (lang ? '' : ' placeholder');
+    label.textContent = lang || 'language';
+    label.contentEditable = 'false';
+
+    label.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const currentLang = getCodeBlockLanguage(previewElement);
+
+        const input = document.createElement('input');
+        input.className = 'code-block-lang-input';
+        input.type = 'text';
+        input.value = currentLang;
+        input.placeholder = 'language';
+        input.contentEditable = 'false';
+
+        const commitChange = () => {
+            const newLang = input.value.trim().toLowerCase();
+            applyLanguageChange(previewElement, newLang);
+            if (input.parentElement) {
+                updateLabelText(label, newLang);
+                input.replaceWith(label);
+            }
+        };
+
+        const cancelChange = () => {
+            if (input.parentElement) {
+                input.replaceWith(label);
+            }
+        };
+
+        input.addEventListener('keydown', (ke) => {
+            ke.stopPropagation();
+            if (ke.key === 'Enter') {
+                ke.preventDefault();
+                commitChange();
+            } else if (ke.key === 'Escape') {
+                ke.preventDefault();
+                cancelChange();
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            commitChange();
+        });
+
+        label.replaceWith(input);
+        input.focus();
+        input.select();
+    });
+
+    // Append to the block (outside the preview), so it sits below the code block
+    block.appendChild(label);
+}
+
+/**
+ * Update the label text and placeholder styling
+ */
+function updateLabelText(label, lang) {
+    label.textContent = lang || 'language';
+    label.classList.toggle('placeholder', !lang);
+}
+
+/**
+ * Apply a language change to the code block's raw markdown source
+ */
+function applyLanguageChange(previewElement, newLang) {
+    const block = previewElement.closest('.vditor-wysiwyg__block');
+    if (!block) return;
+
+    // The hidden pre:first-child > code holds the raw markdown source
+    const sourceCode = block.querySelector('pre:first-child > code');
+    if (!sourceCode) return;
+
+    const source = sourceCode.textContent || '';
+    const lines = source.split('\n');
+
+    // The first line should be the opening fence, e.g. "```javascript" or just "```"
+    if (lines.length > 0 && lines[0].match(/^`{3,}/)) {
+        const fenceMatch = lines[0].match(/^(`{3,})/);
+        const fence = fenceMatch ? fenceMatch[1] : '```';
+        lines[0] = newLang ? fence + newLang : fence;
+        sourceCode.textContent = lines.join('\n');
+
+        // Trigger Vditor to re-process the block
+        const vditorContent = document.querySelector('.vditor-wysiwyg .vditor-reset');
+        if (vditorContent) {
+            vditorContent.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+}
+
+/**
+ * Enhance a single code block preview with copy button and language label
+ */
+function enhanceCodeBlock(previewElement) {
+    addCopyButtonToCodeBlock(previewElement);
+    try {
+        addLanguageLabelToCodeBlock(previewElement);
+    } catch (e) {
+        // Language label is non-critical; don't break copy button
+    }
+}
+
 /**
  * Process all code blocks in the document
  */
@@ -1344,11 +1474,11 @@ function processCodeBlocks() {
     // Find code blocks - in WYSIWYG mode they're wrapped in div.vditor-wysiwyg__block
     // The preview pre inside these blocks contains the rendered code
     const codeBlocks = editorContent.querySelectorAll('.vditor-wysiwyg__block .vditor-wysiwyg__preview');
-    codeBlocks.forEach(addCopyButtonToCodeBlock);
+    codeBlocks.forEach(enhanceCodeBlock);
 }
 
 /**
- * Initialize code block copy functionality
+ * Initialize code block enhancements (copy button + language label)
  */
 export function initCodeBlockCopy() {
     // Process existing code blocks
@@ -1358,23 +1488,14 @@ export function initCodeBlockCopy() {
     const editorContent = document.querySelector('.vditor-wysiwyg') || document.querySelector('.vditor-ir');
     if (!editorContent) return;
 
-    const observer = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-            for (const node of mutation.addedNodes) {
-                if (node.nodeType !== Node.ELEMENT_NODE) continue;
-
-                // Check if the added node is a code block preview
-                if (node.matches?.('.vditor-wysiwyg__preview')) {
-                    addCopyButtonToCodeBlock(node);
-                }
-
-                // Check for code blocks within the added node
-                if (node.querySelectorAll) {
-                    const codeBlocks = node.querySelectorAll('.vditor-wysiwyg__block .vditor-wysiwyg__preview');
-                    codeBlocks.forEach(addCopyButtonToCodeBlock);
-                }
-            }
-        }
+    let enhanceTimer = null;
+    const observer = new MutationObserver(() => {
+        // Debounce: Vditor may re-render previews (replacing inner content and
+        // destroying our buttons/labels). Re-scan all code blocks after mutations settle.
+        if (enhanceTimer) clearTimeout(enhanceTimer);
+        enhanceTimer = setTimeout(() => {
+            processCodeBlocks();
+        }, 100);
     });
 
     observer.observe(editorContent, {

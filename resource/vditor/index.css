@@ -88,6 +88,11 @@ html {
     scrollbar-color: unset;
 }
 
+/* Hide Vditor's built-in copy overlay (conflicts with custom copy button) */
+.vditor-copy {
+    display: none !important;
+}
+
 /* Code block copy button */
 .vditor-wysiwyg__preview {
     position: relative;
@@ -99,8 +104,9 @@ html {
     right: 8px;
     padding: 4px 8px;
     font-size: 12px;
+    font-weight: 500;
     color: var(--vscode-button-foreground, #fff);
-    background-color: var(--vscode-button-secondaryBackground, rgba(90, 93, 94, 0.8));
+    background-color: var(--vscode-button-secondaryBackground, rgba(90, 93, 94, 0.85));
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -120,4 +126,42 @@ html {
 
 .code-block-copy-btn.copied {
     background-color: var(--vscode-testing-iconPassed, #73c991);
+}
+
+/* Code block language label - sits below the code block, right-aligned */
+.code-block-lang-label {
+    display: block;
+    text-align: right;
+    padding: 2px 8px;
+    margin-top: -8px;
+    font-size: 11px;
+    font-family: inherit;
+    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    user-select: none;
+}
+
+.vditor-wysiwyg__block:hover > .code-block-lang-label {
+    opacity: 1;
+}
+
+.code-block-lang-label.placeholder {
+    font-style: italic;
+}
+
+.code-block-lang-input {
+    display: block;
+    margin-left: auto;
+    margin-top: -8px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    color: var(--vscode-input-foreground, #fff);
+    background-color: var(--vscode-input-background, rgba(60, 60, 60, 0.9));
+    border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.2));
+    border-radius: 3px;
+    outline: none;
+    width: 120px;
 }
