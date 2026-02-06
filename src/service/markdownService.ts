@@ -242,7 +242,7 @@ export class MarkdownService {
 
         const filePath = uri.fsPath;
         const ext = path.extname(filePath).toLowerCase();
-        if (ext !== '.md' && ext !== '.markdown') {
+        if (ext !== '.md' && ext !== '.markdown' && ext !== '.qmd') {
             vscode.window.showErrorMessage('The file is not a markdown file.');
             return;
         }

@@ -102,13 +102,13 @@
 				"command": "document-viewer.markdown.paste",
 				"key": "ctrl+v",
 				"mac": "cmd+v",
-				"when": "!terminalFocus && !filesExplorerFocus && resourceLangId == markdown"
+				"when": "!terminalFocus && !filesExplorerFocus && (resourceLangId == markdown || resourceLangId == quarto)"
 			},
 			{
 				"command": "document-viewer.markdown.switch",
 				"key": "ctrl+alt+e",
 				"mac": "ctrl+cmd+e",
-				"when": "editorTextFocus && editorLangId == markdown"
+				"when": "editorTextFocus && (editorLangId == markdown || editorLangId == quarto)"
 			},
 			{
 				"command": "document-viewer.zotero.insertCitation",
@@ -121,7 +121,7 @@
 			"editor/title": [
 				{
 					"command": "document-viewer.markdown.switch",
-					"when": "resourceExtname == '.md'",
+					"when": "resourceExtname == '.md' || resourceExtname == '.qmd'",
 					"group": "navigation@-2"
 				},
 				{
@@ -133,14 +133,14 @@
 			"editor/context": [
 				{
 					"command": "document-viewer.openInTypora",
-					"when": "resourceLangId == markdown",
+					"when": "resourceLangId == markdown || resourceLangId == quarto",
 					"group": "navigation"
 				}
 			],
 			"explorer/context": [
 				{
 					"command": "document-viewer.openInTypora",
-					"when": "resourceLangId == markdown",
+					"when": "resourceLangId == markdown || resourceLangId == quarto",
 					"group": "navigation"
 				}
 			]
@@ -168,6 +168,9 @@
 					},
 					{
 						"filenamePattern": "*.markdown"
+					},
+					{
+						"filenamePattern": "*.qmd"
 					}
 				]
 			}
