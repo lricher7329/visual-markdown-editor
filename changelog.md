@@ -5,6 +5,11 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2026-04-26
+
+### Fixed
+- Mermaid diagrams (sequenceDiagram, flowchart, gantt, etc.) failing to render because the configured CDN package `vscode-vditor@3.11.2` does not exist on npm (404). Switched to upstream `vditor@3.11.2`, which version-matches the bundled Vditor build. Fixes [#1](https://github.com/lricher7329/visual-markdown-editor/issues/1).
+
 ## [2.4.0] - 2026-02-06
 
 ### Added
