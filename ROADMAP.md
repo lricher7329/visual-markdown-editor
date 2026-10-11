@@ -24,7 +24,7 @@ Branch: `master`
   - a `.qmd` file shows the Export button
   - in the citation picker, checked items stay checked while typing, and recently used citations appear first
   - "Open in Typora" on Windows
-- [ ] 2.2 — Remaining audit findings (7 advisories in 5 packages on 2026-10-11):
+- [x] 2.2 — Remaining audit findings (7 advisories in 5 packages on 2026-10-11; done 2026-10-11, 4 advisories left as accepted risks below):
   - `katex` 0.16 (low; prototype pollution can bypass `trust`; fixed in 0.18.2): upgrade, and check that export math still matches the vendored KaTeX CSS
   - `basic-ftp` (high; fixed in 6.2.1) and `extract-zip` (high; no fix released) via `puppeteer-core` → `@puppeteer/browsers`: browser-download code the extension never runs. Try overriding `basic-ftp`; wait for upstream on `extract-zip`
   - `image-size` (high; fixed in 2.0.3) via `vscode-html-to-docx` 1.1.3, the latest, which requires `image-size` ^1 (v2 changed its API): override and test, or route DOCX export through Pandoc
@@ -44,6 +44,7 @@ Branch: `master`
 - [x] 2.6 — Add a typecheck (`tsc --noEmit`) to CI: esbuild and the linter don't type-check, so a type error can ship
 
 Known limitations, not scheduled:
+- Accepted audit findings (2026-10-11): `extract-zip` (2 high, no fixed release) is only used by puppeteer to download browsers, which the extension never does; `image-size` (2 high, denial of service on crafted ICNS/JXL/HEIF images) is compiled into `vscode-html-to-docx`'s bundle, so an override wouldn't change the shipped code. Revisit when either upstream releases a fix, or replace the non-Pandoc DOCX export.
 - Zotero changes still in `zotero.sqlite-wal` aren't visible until Zotero checkpoints the database, because sql.js reads only the main file.
 - Sidecar comments are anchored to line numbers and likely drift when lines are added or removed above them. `CommentService.adjustLineNumbers` was meant for this but was never called (removed in 2.5); the editor replaces the whole document on each change, so there are no per-line edits to adjust from.
 

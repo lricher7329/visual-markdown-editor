@@ -22,7 +22,7 @@ This is a VS Code extension that provides a WYSIWYG markdown editor using [Vdito
 ### Build Pipeline
 
 `build.js` runs esbuild directly:
-1. **Extension bundle** - compiles `src/extension.ts` to `out/extension.js`, copying the PDF templates and the sql.js WASM file into `out/`
+1. **Extension bundle** - compiles `src/extension.ts` to `out/extension.js`; `copyAssets()` then copies the PDF templates, the sql.js WASM file, and KaTeX's stylesheet and fonts (used by export, matching the `katex` package) into `out/`
 2. **Runtime libraries** - bundles each package listed in `dependencies` at the top of `build.js` into `out/node_modules/<name>.js`; these stay external to the extension bundle and are loaded with `require()` at runtime
 
 The webview UI is static: `resource/vditor/` is loaded as-is, with no build step.

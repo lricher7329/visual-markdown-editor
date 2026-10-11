@@ -1,10 +1,22 @@
 const { build, context } = require("esbuild")
 const { resolve } = require("path")
-const { existsSync } = require("fs")
-const { copy } = require("esbuild-plugin-copy")
+const { cpSync, existsSync, mkdirSync } = require("fs")
 const isProd = process.argv.indexOf('--mode=production') >= 0;
 
 const dependencies = ['vscode-html-to-docx', 'highlight.js', 'pdf-lib', 'cheerio', 'katex', 'mustache', 'puppeteer-core']
+
+/**
+ * Copy files the extension reads from out/ at runtime: PDF templates and
+ * styles, the sql.js WASM file, and KaTeX's stylesheet and fonts for export
+ */
+function copyAssets() {
+    cpSync('template', 'out', { recursive: true })
+    cpSync('node_modules/sql.js/dist/sql-wasm.wasm', 'out/sql-wasm.wasm')
+    mkdirSync('out/katex/fonts', { recursive: true })
+    cpSync('node_modules/katex/dist/katex.min.css', 'out/katex/katex.min.css')
+    // woff2 is enough for Chromium, which renders PDF exports
+    cpSync('node_modules/katex/dist/fonts', 'out/katex/fonts', { recursive: true, filter: src => !/\.(ttf|woff)$/.test(src) })
+}
 
 async function main() {
     const options = {
@@ -22,30 +34,14 @@ async function main() {
             'suspicious-boolean-not': "silent",
         },
         plugins: [
-            // Copy template files for PDF generation
-            copy({
-                resolveFrom: 'out',
-                assets: {
-                    from: ['./template/**/*'],
-                    to: ['./'],
-                    keepStructure: true
-                },
-            }),
-            // Copy sql.js WASM file for Zotero integration
-            copy({
-                resolveFrom: 'out',
-                assets: {
-                    from: ['./node_modules/sql.js/dist/sql-wasm.wasm'],
-                    to: ['./'],
-                },
-            }),
             {
                 name: 'build notice',
                 setup(build) {
                     build.onStart(() => {
                         console.log('build start')
                     })
-                    build.onEnd(() => {
+                    build.onEnd(result => {
+                        if (result.errors.length === 0) copyAssets()
                         console.log('build success')
                     })
                 }

@@ -212,10 +212,13 @@ function makeCss(filename) {
 function readStyles() {
   try {
     const basePath = path.join(__dirname, "styles");
-    const katexPath = path.resolve(__dirname, '..', "resource", 'vditor', 'dist', 'js', 'katex', 'katex.min.css');
     const files = ['arduino-light.css', 'markdown.css', 'markdown-pdf.css']
+    // KaTeX's own stylesheet (copied to out/katex by build.js) matches the katex version
+    // that renders the math; its font URLs are relative, so point them at out/katex/fonts
+    const katexDir = path.join(__dirname, "katex")
+    const fontsUrl = URI.file(path.join(katexDir, "fonts")).toString()
     return files.map(file => makeCss(path.join(basePath, file))).join("")
-      + makeCss(katexPath)
+      + makeCss(path.join(katexDir, "katex.min.css")).replace(/url\(fonts\//g, `url(${fontsUrl}/`)
   } catch (error) {
     showErrorMessage("readStyles()", error)
   }

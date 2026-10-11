@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Math in PDF and HTML export renders with KaTeX's own fonts. The exported page couldn't load them before, because the stylesheet's font paths were relative to the temporary file, so formulas fell back to system fonts.
 - Citation picker: recently used citations rise to the top of the default list and are remembered between sessions. Usage history was discarded every time the picker opened.
 - Citation picker: a chosen sort order (title, author, year, date) is no longer replaced by relevance order while you type a search.
 - Citation picker: citations you have checked stay checked and listed while you keep typing.
@@ -15,13 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `document-viewer.editorTheme` accepts all ten editor themes. VS Code flagged seven of the theme picker's choices as invalid values.
 
 ### Security
+- `katex` 0.19 (fixes a low-severity advisory) and `basic-ftp` 6.2.3, forced through `resolutions` (fixes a high-severity advisory in a puppeteer dependency the extension doesn't call). Export now ships the stylesheet and fonts of the `katex` version it renders with.
 - `document-viewer.pandoc.path` and `document-viewer.chromiumPath` can only be set in user settings, so a workspace can't point them at another program. If you set them in a workspace's settings, move them to your user settings.
 
 ### Removed
 - The `document-viewer.zotero.linkedAttachmentsBasePath` setting, which had no effect: the code that used it was never reachable.
 
 ### Changed
-- Development: CI and the publish workflow type-check the code (`yarn typecheck`); removed unused code (`lib.js`, the root `styles/` folder that was packaged into the `.vsix`, `src/vscode.css`, unused Zotero and comment functions, an unused file watcher per editor, and webview cleanup hooks that never ran).
+- Development: CI and the publish workflow type-check the code (`yarn typecheck`); `build.js` copies its assets itself, dropping `esbuild-plugin-copy`; removed unused code (`lib.js`, the root `styles/` folder that was packaged into the `.vsix`, `src/vscode.css`, unused Zotero and comment functions, an unused file watcher per editor, and webview cleanup hooks that never ran).
 
 ## [2.5.0] - 2026-10-11
 
