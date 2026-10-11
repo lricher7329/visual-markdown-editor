@@ -583,8 +583,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         }).on("loadComments", () => {
             const comments = CommentService.loadComments(uri);
             handler.emit("commentsLoaded", comments);
-        }).on("addComment", ({ line, text, selectedText }) => {
-            const comments = CommentService.addComment(uri, line, text, selectedText);
+        }).on("addComment", ({ line, text, selectedText, anchor }) => {
+            const comments = CommentService.addComment(uri, line, text, selectedText, anchor);
+            handler.emit("commentsLoaded", comments);
+        }).on("reattachComment", ({ id, anchor, selectedText }) => {
+            const comments = CommentService.reattachComment(uri, id, anchor, selectedText);
             handler.emit("commentsLoaded", comments);
         }).on("updateComment", ({ id, text }) => {
             const comments = CommentService.updateComment(uri, id, text);

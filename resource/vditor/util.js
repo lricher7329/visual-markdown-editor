@@ -1,3 +1,5 @@
+import { createAnchor, findAnchor } from './anchor.js';
+
 // Constants
 const SCROLL_OFFSET = 70;
 const SCROLL_HACK_INTERVAL_MS = 10;
@@ -244,7 +246,7 @@ export async function getToolbar() {
             click() {
                 const line = getCurrentEditorLine();
                 const selectedText = document.getSelection()?.toString()?.trim() || '';
-                showAddCommentDialog(line, selectedText);
+                showAddCommentDialog(line, selectedText, anchorForSelection(true));
             }
         },
         {
@@ -619,10 +621,190 @@ function getCurrentEditorLine() {
 // Store comments in memory for rendering
 let currentComments = [];
 
+// ============================================
+// Comment anchors: keep comments attached to their text
+// ============================================
+
+const COMMENT_HIGHLIGHT = 'vme-comment';
+const COMMENT_ACTIVE_HIGHLIGHT = 'vme-comment-active';
+const PARAGRAPH_ANCHOR_LENGTH = 120;
+const REANCHOR_DEBOUNCE_MS = 300;
+const FLASH_MS = 1500;
+
+// Where each attached comment currently is, by comment id
+let commentRanges = new Map();
+
+/**
+ * The editor's visible text and where each text node starts in it.
+ * Hidden markdown sources (e.g. of code blocks) and diagram SVG text are skipped.
+ */
+function collectEditorText() {
+    const root = document.querySelector('.vditor-wysiwyg .vditor-reset');
+    const nodes = [];
+    let text = '';
+    if (!root) return { root, text, nodes };
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const el = node.parentElement;
+            return el && !el.closest('svg') && el.checkVisibility()
+                ? NodeFilter.FILTER_ACCEPT
+                : NodeFilter.FILTER_REJECT;
+        }
+    });
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        nodes.push({ node, start: text.length });
+        text += node.data;
+    }
+    return { root, text, nodes };
+}
+
+/** Offset in the collected text of a DOM boundary point */
+function textOffset(nodes, container, offset) {
+    if (container.nodeType === Node.TEXT_NODE) {
+        const entry = nodes.find(n => n.node === container);
+        if (entry) return entry.start + offset;
+    }
+    // Element boundary or skipped node: the first collected text at or after the point
+    const point = document.createRange();
+    point.setStart(container, offset);
+    const entry = nodes.find(n => point.comparePoint(n.node, 0) >= 0);
+    if (entry) return entry.start;
+    const last = nodes[nodes.length - 1];
+    return last ? last.start + last.node.data.length : 0;
+}
+
+/** DOM range for offsets in the collected text */
+function rangeFromOffsets(nodes, start, end) {
+    const locate = offset => {
+        for (const { node, start: nodeStart } of nodes) {
+            if (offset <= nodeStart + node.data.length) return [node, Math.max(0, offset - nodeStart)];
+        }
+        const last = nodes[nodes.length - 1];
+        return [last.node, last.node.data.length];
+    };
+    const range = document.createRange();
+    range.setStart(...locate(start));
+    range.setEnd(...locate(end));
+    return range;
+}
+
+/**
+ * Anchor for the current selection. With allowParagraph, a caret without a
+ * selection anchors to the start of its paragraph.
+ */
+function anchorForSelection(allowParagraph) {
+    const { root, text, nodes } = collectEditorText();
+    const selection = document.getSelection();
+    if (!root || !selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    if (!root.contains(range.commonAncestorContainer)) return null;
+    if (!range.collapsed) {
+        return createAnchor(text,
+            textOffset(nodes, range.startContainer, range.startOffset),
+            textOffset(nodes, range.endContainer, range.endOffset));
+    }
+    if (!allowParagraph) return null;
+    let block = range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer : range.startContainer.parentElement;
+    while (block && block.parentElement !== root) block = block.parentElement;
+    if (!block) return null;
+    const blockRange = document.createRange();
+    blockRange.selectNodeContents(block);
+    return createAnchor(text,
+        textOffset(nodes, blockRange.startContainer, blockRange.startOffset),
+        textOffset(nodes, blockRange.endContainer, blockRange.endOffset),
+        PARAGRAPH_ANCHOR_LENGTH);
+}
+
+/** Comments made before anchors existed attach by their selected text */
+function commentAnchor(comment) {
+    if (comment.anchor) return comment.anchor;
+    return comment.selectedText ? { exact: comment.selectedText, prefix: '', suffix: '' } : null;
+}
+
+/**
+ * Find every comment's text and highlight it. The CSS Custom Highlight API
+ * paints ranges without touching the DOM, so nothing leaks into the markdown.
+ */
+function highlightComments() {
+    if (typeof CSS === 'undefined' || !CSS.highlights) return;
+    commentRanges = new Map();
+    // Most documents have no comments: skip walking the text on every edit
+    if (currentComments.length === 0) {
+        CSS.highlights.delete(COMMENT_HIGHLIGHT);
+        return;
+    }
+    const { root, text, nodes } = collectEditorText();
+    if (root && nodes.length > 0) {
+        for (const comment of currentComments) {
+            const anchor = commentAnchor(comment);
+            const found = anchor && findAnchor(text, anchor);
+            if (found) commentRanges.set(comment.id, rangeFromOffsets(nodes, found.start, found.end));
+        }
+    }
+    CSS.highlights.set(COMMENT_HIGHLIGHT, new Highlight(...commentRanges.values()));
+    updateCommentAttachment();
+}
+
+/** Mark each panel item as attached, detached (text not found) or general (no anchor) */
+function updateCommentAttachment() {
+    for (const comment of currentComments) {
+        const item = document.querySelector(`.comment-panel-item[data-id="${CSS.escape(comment.id)}"]`);
+        if (!item) continue;
+        const detached = !!commentAnchor(comment) && !commentRanges.has(comment.id);
+        item.classList.toggle('attached', commentRanges.has(comment.id));
+        item.classList.toggle('detached', detached);
+        const note = item.querySelector('.comment-panel-note');
+        if (note) note.hidden = !detached;
+    }
+}
+
+/** Scroll a comment's text into view and flash it */
+function revealComment(id) {
+    const range = commentRanges.get(id);
+    const scroller = document.querySelector('.vditor-wysiwyg .vditor-reset');
+    if (!range || !scroller) return;
+    const rect = range.getBoundingClientRect();
+    const box = scroller.getBoundingClientRect();
+    scroller.scrollTop += rect.top - box.top - box.height / 3;
+    CSS.highlights.set(COMMENT_ACTIVE_HIGHLIGHT, new Highlight(range));
+    clearTimeout(revealComment.timer);
+    revealComment.timer = setTimeout(() => CSS.highlights.delete(COMMENT_ACTIVE_HIGHLIGHT), FLASH_MS);
+}
+
+/** Clicking highlighted text brings up its comment in the panel */
+function showCommentAt(event) {
+    const point = document.caretRangeFromPoint?.(event.clientX, event.clientY);
+    if (!point) return;
+    for (const [id, range] of commentRanges) {
+        if (!range.isPointInRange(point.startContainer, point.startOffset)) continue;
+        const panel = document.getElementById('comment-panel');
+        const item = panel?.querySelector(`.comment-panel-item[data-id="${CSS.escape(id)}"]`);
+        if (!item) return;
+        panel.classList.remove('collapsed');
+        document.getElementById('comment-panel-toggle')?.classList.add('panel-open');
+        item.scrollIntoView({ block: 'nearest' });
+        item.classList.add('flash');
+        setTimeout(() => item.classList.remove('flash'), FLASH_MS);
+        return;
+    }
+}
+
+/** Attach a detached comment to the text selected in the editor */
+function reattachComment(comment, button) {
+    const anchor = anchorForSelection(false);
+    if (!anchor) {
+        button.textContent = 'Select text in the document first';
+        setTimeout(() => { button.textContent = 'Re-attach to selection'; }, FLASH_MS);
+        return;
+    }
+    const selectedText = document.getSelection()?.toString()?.trim() || undefined;
+    window.handler.emit("reattachComment", { id: comment.id, anchor, selectedText });
+}
+
 /**
  * Show dialog to add a new comment
  */
-function showAddCommentDialog(line, selectedText = '') {
+function showAddCommentDialog(line, selectedText = '', anchor = null) {
     // Remove existing dialog if any
     const existingDialog = document.getElementById('comment-dialog');
     if (existingDialog) existingDialog.remove();
@@ -659,7 +841,7 @@ function showAddCommentDialog(line, selectedText = '') {
     dialog.querySelector('.comment-btn-save').onclick = () => {
         const text = textarea.value.trim();
         if (text) {
-            window.handler.emit("addComment", { line, text, selectedText: selectedText || undefined });
+            window.handler.emit("addComment", { line, text, selectedText: selectedText || undefined, anchor: anchor || undefined });
         }
         dialog.remove();
     };
@@ -777,7 +959,19 @@ export function initComments() {
     window.handler.on("commentsLoaded", (comments) => {
         currentComments = comments || [];
         renderComments();
+        highlightComments();
     });
+
+    // Follow comments' text as the document changes (typing, external updates, re-renders)
+    const editor = document.querySelector('.vditor-wysiwyg');
+    if (editor) {
+        let timer;
+        new MutationObserver(() => {
+            clearTimeout(timer);
+            timer = setTimeout(highlightComments, REANCHOR_DEBOUNCE_MS);
+        }).observe(editor, { childList: true, subtree: true, characterData: true });
+        editor.addEventListener('click', showCommentAt);
+    }
 }
 
 /**
@@ -819,20 +1013,32 @@ function renderComments() {
         const selectedTextHtml = comment.selectedText
             ? `<div class="comment-panel-selected">"${escapeHtml(comment.selectedText.substring(0, TEXT_PREVIEW_SHORT_LENGTH))}${comment.selectedText.length > TEXT_PREVIEW_SHORT_LENGTH ? '...' : ''}"</div>`
             : '';
+        item.dataset.id = comment.id;
         item.innerHTML = `
             <div class="comment-panel-item-header">
                 <span class="comment-panel-date">${date}</span>
             </div>
             ${selectedTextHtml}
             <div class="comment-panel-text">${escapeHtml(comment.text)}</div>
+            <div class="comment-panel-note" hidden>
+                Text not found; it may have been edited or deleted.
+                <button class="comment-panel-reattach">Re-attach to selection</button>
+            </div>
             <div class="comment-panel-actions">
                 <button class="comment-panel-edit" title="Edit">Edit</button>
                 <button class="comment-panel-delete" title="Delete">Delete</button>
             </div>
         `;
 
+        item.onclick = (event) => {
+            if (!event.target.closest('button')) revealComment(comment.id);
+        };
         item.querySelector('.comment-panel-edit').onclick = () => showEditCommentDialog(comment);
         item.querySelector('.comment-panel-delete').onclick = () => showDeleteConfirmDialog(comment.id);
+        const reattach = item.querySelector('.comment-panel-reattach');
+        // Keep the editor's selection when the button is pressed
+        reattach.onmousedown = (event) => event.preventDefault();
+        reattach.onclick = () => reattachComment(comment, reattach);
 
         list.appendChild(item);
     });

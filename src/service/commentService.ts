@@ -2,16 +2,26 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import * as vscode from 'vscode';
 import { Output } from '@/common/Output';
 
+/** The commented text plus some context on each side (see resource/vditor/anchor.js) */
+export interface CommentAnchor {
+    exact: string;
+    prefix: string;
+    suffix: string;
+}
+
 export interface Comment {
     id: string;
+    /** Legacy block index from when the comment was added; not used for placement */
     line: number;
     text: string;
     selectedText?: string;
+    /** Where the comment attaches; absent in comments made before version 1.1 */
+    anchor?: CommentAnchor;
     timestamp: string;
 }
 
 interface CommentFile {
-    version: "1.0";
+    version: "1.0" | "1.1";
     comments: Comment[];
 }
 
@@ -55,7 +65,7 @@ export class CommentService {
         const commentsPath = this.getCommentsFilePath(docUri);
 
         const data: CommentFile = {
-            version: "1.0",
+            version: "1.1",
             comments: comments
         };
 
@@ -77,7 +87,7 @@ export class CommentService {
     /**
      * Add a new comment
      */
-    static addComment(docUri: vscode.Uri, line: number, text: string, selectedText?: string): Comment[] {
+    static addComment(docUri: vscode.Uri, line: number, text: string, selectedText?: string, anchor?: CommentAnchor): Comment[] {
         const comments = this.loadComments(docUri);
 
         const newComment: Comment = {
@@ -85,6 +95,7 @@ export class CommentService {
             line,
             text,
             selectedText,
+            anchor,
             timestamp: new Date().toISOString()
         };
 
@@ -104,6 +115,22 @@ export class CommentService {
         if (comment) {
             comment.text = newText;
             comment.timestamp = new Date().toISOString();
+            this.saveComments(docUri, comments);
+        }
+
+        return comments;
+    }
+
+    /**
+     * Attach a comment to new text, e.g. after its original text was edited away
+     */
+    static reattachComment(docUri: vscode.Uri, commentId: string, anchor: CommentAnchor, selectedText?: string): Comment[] {
+        const comments = this.loadComments(docUri);
+
+        const comment = comments.find(c => c.id === commentId);
+        if (comment) {
+            comment.anchor = anchor;
+            comment.selectedText = selectedText;
             this.saveComments(docUri, comments);
         }
 

@@ -46,6 +46,7 @@ Key events: `init`, `open`, `save`, `doSave`, `update`, `export`, `theme`, `scro
 | `src/provider/markdownEditorProvider.ts` | Main editor provider (CustomTextEditorProvider) |
 | `src/service/markdownService.ts` | Export (PDF/HTML/DOCX), clipboard image handling |
 | `src/service/commentService.ts` | Sidecar `.comments` file management |
+| `resource/vditor/anchor.js` | Comment anchors: quote plus context, re-found after edits (highlighting in `util.js`) |
 | `src/service/zotero/` | Zotero citation integration (see below) |
 | `src/common/handler.ts` | Webview ↔ Extension message bus |
 | `resource/vditor/` | Vditor editor HTML/JS/CSS (loaded into webview) |

@@ -8,7 +8,7 @@ A VS Code extension for WYSIWYG markdown editing, powered by [Vditor](https://gi
 - **Find in document** - Search with `Ctrl/Cmd+F`, navigate with Enter/Shift+Enter
 - **Live outline** - Navigate large documents easily
 - **Zoom controls** - Toolbar buttons, keyboard shortcuts, and mouse wheel zoom
-- **Comments** - Add comments to your documents (stored in sidecar `.comments` files)
+- **Comments** - Add comments to your documents (stored in sidecar `.comments` files). Commented text is highlighted, comments follow their text as you edit, and clicking a comment jumps to its text
 - **Image paste** - Paste images directly from clipboard
 - **Math support** - KaTeX for mathematical formulas
 - **Code highlighting** - Syntax highlighting for code blocks
@@ -128,7 +128,7 @@ Zoom range: 50% to 200%
 ## Tips
 
 - **Open links**: `Ctrl/Cmd + click` or double-click
-- **Comments**: Click the comment icon to add notes to selected text
+- **Comments**: Select text and click the comment icon to add a note (without a selection, the comment attaches to the current paragraph). If the commented text is later edited away, the comment is marked in the panel and can be re-attached to a new selection
 - **Open in Typora**: Click the Typora icon to edit in Typora (must be installed)
 - **Context menu**: Right-click for Copy, Paste, Insert Citation, and Export
 

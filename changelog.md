@@ -5,6 +5,15 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Comments stay attached to the text they're about. Commented text is highlighted in the editor and followed through edits, even when content is added above it or the file changes outside the editor. Clicking a comment scrolls to its text, and clicking highlighted text shows its comment.
+- A comment whose text was edited away is marked "text not found" in the panel instead of moving to other text, with a button to re-attach it to a new selection.
+
+### Changed
+- Comments store an anchor (the quoted text plus some surrounding context) in the `.comments` sidecar, now version 1.1. Older versions of the extension can still read these files. Existing comments attach by the text that was selected when they were made; comments made without a selection stay general.
+
 ## [2.6.0] - 2026-10-11
 
 ### Changed

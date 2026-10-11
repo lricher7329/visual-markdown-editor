@@ -10,6 +10,7 @@ import {
     AddCommentData,
     UpdateCommentData,
     DeleteCommentData,
+    ReattachCommentData,
     ThemeSelection
 } from "../types/messages";
 
@@ -33,6 +34,7 @@ interface EventHandlers {
     addComment: (data: AddCommentData) => void | PromiseLike<void>;
     updateComment: (data: UpdateCommentData) => void | PromiseLike<void>;
     deleteComment: (data: DeleteCommentData) => void | PromiseLike<void>;
+    reattachComment: (data: ReattachCommentData) => void | PromiseLike<void>;
     saveOutline: (enable: boolean) => void | PromiseLike<void>;
     developerTool: () => void | PromiseLike<void>;
     quickOpen: () => void | PromiseLike<void>;

@@ -8,12 +8,20 @@
 
 - **Tier:** C — Direct (an `extensions/*` repo: land on `master`, no PRs; the publish workflow runs on `v*` tags)
 - **Local check:** `yarn lint:fix && yarn typecheck && yarn test && yarn build && yarn package` (what CI runs)
-- **Active milestone:** none — between milestones
+- **Active milestone:** M3 — Comments stay attached to their text
 - **Branch:** `master`
-- **Next step:** no milestone planned yet; pick one from the candidates under M2's known limitations (decision needed)
+- **Next step:** M3 phase 3.5, a manual check in the editor; then release
 - **Updated:** 2026-10-11
 
 ## Milestones
+
+### M3 — Comments stay attached to their text  `[~] in progress`
+Branch: `master`. Today a comment stores a block-index `line` that nothing reads, and the panel only lists comments, so nothing ties a comment to its text.
+- [x] 3.1 — Anchor: store the quoted text plus about 32 characters of context on each side (`anchor` in the sidecar, version 1.1); a comment without a selection anchors to its paragraph; pure matching code in `resource/vditor/anchor.js` with unit tests
+- [x] 3.2 — Show: highlight anchored text with the CSS Custom Highlight API (no DOM changes, so nothing leaks into the markdown); re-anchor after edits
+- [x] 3.3 — Navigate: clicking a comment scrolls to and flashes its text; clicking highlighted text brings up its comment
+- [x] 3.4 — Detached comments (a weak context match detaches instead of jumping to another occurrence of the same words): "text not found" in the panel, with re-attach to the current selection; legacy comments anchor by `selectedText`, and comments with neither stay general
+- [ ] 3.5 — Check in the editor (Positron/VS Code): add a comment on a selection and on a paragraph, edit around it, edit it away and re-attach; highlight colors in a dark theme
 
 ### M2 — Leftover cleanup  `[x] complete`
 Branch: `master` · Landed: 2026-10-11 · Released in v2.6.0
@@ -66,6 +74,8 @@ Branch: `milestone/modernize-and-harden` · Merged: 2026-10-11 · Released as v2
 
 ## Changelog
 
+- 2026-10-11 — M3 phases 3.1–3.4 done on `master` (browser-harness verified).
+- 2026-10-11 — M3 planned: anchor comments to their text.
 - 2026-10-11 — M2 complete: the manual checks (2.1) passed in Positron.
 - 2026-10-11 — Released v2.6.0 with M2 phases 2.2–2.6.
 - 2026-10-11 — M2 phases 2.2–2.6 complete on `master` (audit findings, citation picker, settings, dead code, CI typecheck); 2.1 awaits a manual check.

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Comment } from '../service/commentService';
+import { Comment, CommentAnchor } from '../service/commentService';
 
 /**
  * Export types supported by the markdown exporter
@@ -58,6 +58,13 @@ export interface ScrollData {
 export interface AddCommentData {
     line: number;
     text: string;
+    selectedText?: string;
+    anchor?: CommentAnchor;
+}
+
+export interface ReattachCommentData {
+    id: string;
+    anchor: CommentAnchor;
     selectedText?: string;
 }
 
@@ -153,6 +160,11 @@ export interface DeleteCommentMessage {
     content: DeleteCommentData;
 }
 
+export interface ReattachCommentMessage {
+    type: 'reattachComment';
+    content: ReattachCommentData;
+}
+
 export interface SaveOutlineMessage {
     type: 'saveOutline';
     content: boolean;
@@ -193,6 +205,7 @@ export type WebviewToExtensionMessage =
     | AddCommentMessage
     | UpdateCommentMessage
     | DeleteCommentMessage
+    | ReattachCommentMessage
     | SaveOutlineMessage
     | DeveloperToolMessage
     | InsertImageMessage
