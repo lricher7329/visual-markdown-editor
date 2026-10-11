@@ -42,8 +42,9 @@ export async function exportByType(filePath, data, type, config) {
 
     // Errors propagate to MarkdownService.exportMarkdown, which reports them
     const puppeteer = require("puppeteer-core")
-    const browser = await puppeteer.launch(options)
+    let browser
     try {
+        browser = await puppeteer.launch(options)
         const page = await browser.newPage()
         await page.goto(URI.file(tmpfilename).toString(), { waitUntil: "networkidle0" })
         await waitForMermaid(page)
@@ -67,7 +68,7 @@ export async function exportByType(filePath, data, type, config) {
             fs.writeFileSync(targetFilePath, pdfBytes)
         }
     } finally {
-        await browser.close()
+        await browser?.close()
 
         // delete temporary file
         let debug = config["debug"] || false

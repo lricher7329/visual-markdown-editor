@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The image-aware `Ctrl/Cmd+V` no longer takes over paste in the Search box, terminal, panels or Quick Open while a markdown file is open.
 - PDF/HTML export turned newer Mermaid diagram types (`flowchart`, `pie`, `erDiagram`, `stateDiagram`, ...) into "Parse error" text. Export no longer pre-validates with a bundled Mermaid 7; diagrams render with Mermaid 11 and PDF export waits for them to finish rendering.
 - HTML and DOCX export no longer require a Chromium browser to be installed.
-- Export failures now show an error message instead of failing silently (or reporting success), and the headless browser is always closed.
+- Export failures now show an error message instead of failing silently (or reporting success); the headless browser is always closed and the temporary HTML file removed, even when the browser fails to start.
 
 ### Security
 - The editor webview now has a Content Security Policy: only the extension's own scripts run, so inline script injection (for example `onerror=` attributes or `javascript:` links) is blocked.
@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refreshed dependencies within their semver ranges and upgraded `vitest` to 4 and `esbuild` to 0.28, clearing all critical and most high-severity audit findings.
 - CI and publish workflows now run on Node 24 (Node 20 is end-of-life).
 - Development files (`.claude/`, `.github/`, `CLAUDE.md`, etc.) are no longer packaged into the `.vsix`.
+- PDF export uses puppeteer-core 24 (was 1.20 from 2019).
 - Linting moved from ESLint 8 to ESLint 10 (both 8 and 9 are end-of-life) with a flat config in `eslint.config.js`.
 - `yarn lint:fix` now lints every TypeScript file (the unquoted glob skipped `src/extension.ts` and `src/service/zotero/`).
 - Merged the two copies of the export options picker.
