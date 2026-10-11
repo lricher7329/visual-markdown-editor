@@ -5,26 +5,33 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.5.0] - 2026-10-11
+
+### Changed
+- **Insert Zotero Citation is now `Shift+Alt+Z`** (`⇧⌥Z` on macOS, the shortcut the Citation Picker for Zotero extension uses). The old `Ctrl/Cmd+Shift+Z` shadowed Redo in the editor.
+- Requires VS Code 1.96 or later. Export already depended on Node 20.18.1 (via `cheerio`), which VS Code first ships in 1.96; the manifest now says so.
+- Mermaid, code highlighting, Graphviz, ECharts, ABC notation and flowchart renderers are bundled with the extension instead of loaded from unpkg.com, so they render offline and where unpkg is slow or blocked.
+- PDF export uses puppeteer-core 24 (was 1.20 from 2019).
+- Removed unused dependencies (`axios`, `iconv-lite`, `date-format`) and `markdown-it-mermaid`; the extension bundle shrinks from about 1.1 MB to 0.4 MB, and development files are no longer packaged into the `.vsix`.
+- Development: removed the unused React webview along with React, antd and Vite (`yarn build` and `yarn dev` run `build.js` directly); linting moved to ESLint 10 with `eslint.config.js` (8 and 9 are end-of-life) and now covers every TypeScript file; upgraded `vitest` to 4, `esbuild` to 0.28 and `file-type` to 21; CI and publish workflows run on Node 24; dependencies refreshed, clearing all critical and most high-severity audit findings.
 
 ### Fixed
-- Code blocks in the editor lost syntax highlighting: since 2.4.1 the editor requested highlight.js files that don't exist in the CDN package it pointed to. The bundled editor is Vditor 3.8.19, whose file layout differs from 3.11.2.
-- Mermaid diagrams, code highlighting, Graphviz, ECharts, ABC notation and flowcharts no longer depend on unpkg.com: they are bundled with the extension, so they render offline and where unpkg is slow or blocked.
 - Zotero citations failed to load with current Better BibTeX, which moved citation keys out of `better-bibtex.sqlite` into Zotero's own `citationKey` field. Keys are now read from Zotero's database; a legacy `better-bibtex.sqlite` is still used when present.
 - Zotero auto-detection never found a custom data directory on macOS and Windows (profile paths in `profiles.ini` were resolved against the wrong folder), and now falls back to `~/Zotero` when the configured directory is stale.
-- New Zotero items appear without a manual refresh: the library reloads when Zotero's database file changes. Loading the library is also about 3× faster.
+- New Zotero items appear without a manual refresh: the library reloads when Zotero's database file changes. The library query is also about 3× faster.
+- Code blocks in the editor had no syntax highlighting: the editor requested highlight.js files that the CDN package it pointed to doesn't contain.
+- PDF/HTML export turned newer Mermaid diagram types (`flowchart`, `pie`, `erDiagram`, `stateDiagram`, ...) into "Parse error" text. Export no longer pre-validates with a bundled Mermaid 7; diagrams render with Mermaid 11 and PDF export waits for them to finish rendering.
 - Pandoc export failed for files whose path contains spaces, and file names were interpreted by the shell. Pandoc now runs without a shell, and its temporary bibliography is removed even when the export fails.
 - Citation export (Pandoc) no longer reports e-mail addresses, URLs and code such as `@decorator` or `@media` as missing citations, includes group-library items regardless of the picker's library filter, and no longer corrupts backslashes in BibTeX fields.
 - Exports now wait for the document to be saved, so unsaved edits are included.
-- "Open in Typora" no longer runs the file name through a terminal shell, works with PowerShell as the default Windows terminal, and reports when Typora cannot be found.
+- HTML and DOCX export no longer require a Chromium browser to be installed.
+- Export failures now show an error message instead of failing silently (or reporting success); the headless browser is always closed and the temporary HTML file removed, even when the browser fails to start.
+- "Open in Typora" launches Typora directly instead of typing a command into a hidden terminal, which ran the file name through the shell and failed in PowerShell on Windows; it now reports when Typora cannot be found.
 - "Switch markdown editor" opened a view type left over from the upstream extension and did nothing.
 - Dropping or uploading the first image into a document failed because its image folder did not exist yet; the image link is now inserted without overwriting the clipboard.
 - Insert Citation from the command palette no longer targets a closed editor.
 - `.qmd` files (and `.md` files opened with "Markdown Editor (Optional)") get the Insert Citation shortcut and the Export button; `.markdown` files get the Switch Editor button.
 - The image-aware `Ctrl/Cmd+V` no longer takes over paste in the Search box, terminal, panels or Quick Open while a markdown file is open.
-- PDF/HTML export turned newer Mermaid diagram types (`flowchart`, `pie`, `erDiagram`, `stateDiagram`, ...) into "Parse error" text. Export no longer pre-validates with a bundled Mermaid 7; diagrams render with Mermaid 11 and PDF export waits for them to finish rendering.
-- HTML and DOCX export no longer require a Chromium browser to be installed.
-- Export failures now show an error message instead of failing silently (or reporting success); the headless browser is always closed and the temporary HTML file removed, even when the browser fails to start.
 
 ### Security
 - The editor webview now has a Content Security Policy: only the extension's own scripts run, so inline script injection (for example `onerror=` attributes or `javascript:` links) is blocked.
@@ -32,19 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Links other than `http`, `https`, `mailto` and `zotero` ask before opening.
 - Mermaid diagrams render in strict mode (no HTML labels beyond line breaks, no click handlers).
 - The editor webview can only ask the extension to run the one command it uses, instead of any VS Code command.
-
-### Changed
-- **Insert Zotero Citation is now `Shift+Alt+Z`** (`⇧⌥Z` on macOS, the shortcut the Citation Picker for Zotero extension uses). The old `Ctrl/Cmd+Shift+Z` shadowed Redo in the editor.
-- Requires VS Code 1.96 or later. Export already depended on Node 20.18.1 (via `cheerio`), which VS Code first ships in 1.96; the manifest now says so, and `file-type` is upgraded to 21.
-- Removed the unused React webview along with React, antd and Vite; `yarn build` and `yarn dev` run the esbuild script (`build.js`) directly.
-- Removed unused dependencies (`axios`, `iconv-lite`, `date-format`) and `markdown-it-mermaid`; extension bundle shrinks from ~1.1 MB to ~0.4 MB.
-- Refreshed dependencies within their semver ranges and upgraded `vitest` to 4 and `esbuild` to 0.28, clearing all critical and most high-severity audit findings.
-- CI and publish workflows now run on Node 24 (Node 20 is end-of-life).
-- Development files (`.claude/`, `.github/`, `CLAUDE.md`, etc.) are no longer packaged into the `.vsix`.
-- PDF export uses puppeteer-core 24 (was 1.20 from 2019).
-- Linting moved from ESLint 8 to ESLint 10 (both 8 and 9 are end-of-life) with a flat config in `eslint.config.js`.
-- `yarn lint:fix` now lints every TypeScript file (the unquoted glob skipped `src/extension.ts` and `src/service/zotero/`).
-- Merged the two copies of the export options picker.
 
 ## [2.4.1] - 2026-04-26
 
