@@ -94,7 +94,7 @@ export async function checkPandocInstallation(): Promise<PandocStatus> {
             version,
             path: pandocPath
         };
-    } catch (error) {
+    } catch {
         return {
             installed: false,
             error: 'Pandoc is not installed or not in PATH. Install from https://pandoc.org/installing.html'

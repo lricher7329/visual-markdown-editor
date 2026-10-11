@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refreshed dependencies within their semver ranges and upgraded `vitest` to 4 and `esbuild` to 0.28, clearing all critical and most high-severity audit findings.
 - CI and publish workflows now run on Node 24 (Node 20 is end-of-life).
 - Development files (`.claude/`, `.github/`, `CLAUDE.md`, etc.) are no longer packaged into the `.vsix`.
+- Linting moved from ESLint 8 to ESLint 10 (both 8 and 9 are end-of-life) with a flat config in `eslint.config.js`.
 - `yarn lint:fix` now lints every TypeScript file (the unquoted glob skipped `src/extension.ts` and `src/service/zotero/`).
 - Merged the two copies of the export options picker.
 
