@@ -10,7 +10,7 @@
 - **Local check:** `yarn lint:fix && yarn typecheck && yarn test && yarn build && yarn package` (what CI runs)
 - **Active milestone:** M2 — Leftover cleanup
 - **Branch:** `master`
-- **Next step:** M2 phases 2.2–2.6 in progress on `master`; phase 2.1 is a manual check in VS Code
+- **Next step:** phase 2.1, the manual check in VS Code/Positron (checklist under M2); then release the Unreleased changelog entries as 2.6.0
 - **Updated:** 2026-10-11
 
 ## Milestones
@@ -66,4 +66,5 @@ Branch: `milestone/modernize-and-harden` · Merged: 2026-10-11 · Released as v2
 
 ## Changelog
 
+- 2026-10-11 — M2 phases 2.2–2.6 complete on `master` (audit findings, citation picker, settings, dead code, CI typecheck); 2.1 awaits a manual check.
 - 2026-10-11 — M1 complete: merged `milestone/modernize-and-harden` into `master` and released v2.5.0. Roadmap created; M2 lists the leftovers.
