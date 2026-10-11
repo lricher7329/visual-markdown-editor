@@ -119,24 +119,4 @@ export class CommentService {
         this.saveComments(docUri, comments);
         return comments;
     }
-
-    /**
-     * Update line numbers when document changes
-     * Call this when lines are added/removed to keep comments aligned
-     */
-    static adjustLineNumbers(docUri: vscode.Uri, startLine: number, delta: number): void {
-        const comments = this.loadComments(docUri);
-        let changed = false;
-
-        for (const comment of comments) {
-            if (comment.line >= startLine) {
-                comment.line += delta;
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            this.saveComments(docUri, comments);
-        }
-    }
 }

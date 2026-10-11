@@ -288,35 +288,3 @@ export async function generateBibFile(
         citationsMissing
     };
 }
-
-/**
- * Get items by citation keys (for preview or validation)
- */
-export async function getItemsByCiteKeys(citeKeys: string[]): Promise<{
-    found: ZoteroItem[];
-    missing: string[];
-}> {
-    const zoteroService = await ZoteroService.getInstanceAsync();
-    await zoteroService.connectIfNeeded();
-    // Ignore the picker's library filter: every cited item belongs in the bibliography
-    const allItems = await zoteroService.getItems('all');
-
-    const itemMap = new Map<string, ZoteroItem>();
-    for (const item of allItems) {
-        itemMap.set(item.citeKey, item);
-    }
-
-    const found: ZoteroItem[] = [];
-    const missing: string[] = [];
-
-    for (const citeKey of citeKeys) {
-        const item = itemMap.get(citeKey);
-        if (item) {
-            found.push(item);
-        } else {
-            missing.push(citeKey);
-        }
-    }
-
-    return { found, missing };
-}

@@ -5,18 +5,14 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import initSqlJs, { Database, QueryExecResult } from 'sql.js';
+import initSqlJs, { Database } from 'sql.js';
 import {
     queryBbt,
     queryItems,
     queryCreators,
     queryTags,
     queryCollections,
-    queryZoteroKey,
-    queryPdfByZoteroKey,
-    queryDoiByZoteroKey,
-    queryLibraries,
-    queryAttachmentPath
+    queryLibraries
 } from './zoteroQueries';
 import {
     handleError,
@@ -24,7 +20,7 @@ import {
     expandPath
 } from './zoteroHelpers';
 import { detectZoteroPaths } from './zoteroDetect';
-import { ZoteroItem, ZoteroOpenOption, ZoteroDatabaseOptions, ZoteroLibrary, LibraryFilter } from './zoteroTypes';
+import { ZoteroItem, ZoteroDatabaseOptions, ZoteroLibrary, LibraryFilter } from './zoteroTypes';
 import { zoteroLogger } from './zoteroLogger';
 
 export class ZoteroService {
@@ -101,7 +97,6 @@ export class ZoteroService {
     private static async createInstance(): Promise<ZoteroService> {
         const config = vscode.workspace.getConfiguration('document-viewer');
         const autoDetect = config.get<boolean>('zotero.autoDetect', true);
-        const linkedAttachmentsBasePath = config.get<string>('zotero.linkedAttachmentsBasePath', '');
 
         zoteroLogger.info('Creating ZoteroService instance');
         zoteroLogger.setStatus({ status: 'connecting', message: 'Detecting Zotero installation...' });
@@ -117,8 +112,7 @@ export class ZoteroService {
                 options = {
                     zoteroDbPath: detected.zoteroDbPath,
                     // Absent with current Better BibTeX, which stores keys in Zotero's citationKey field
-                    betterBibtexDbPath: detected.betterBibtexDbPath ?? undefined,
-                    linkedAttachmentsBasePath: linkedAttachmentsBasePath ? expandPath(linkedAttachmentsBasePath) : undefined
+                    betterBibtexDbPath: detected.betterBibtexDbPath ?? undefined
                 };
             } else {
                 // Detection failed, fall back to manual paths
@@ -128,8 +122,7 @@ export class ZoteroService {
                 );
                 options = {
                     zoteroDbPath: expandPath(config.get('zotero.zoteroDbPath', '~/Zotero/zotero.sqlite')),
-                    betterBibtexDbPath: expandPath(config.get('zotero.betterBibtexDbPath', '~/Zotero/better-bibtex.sqlite')),
-                    linkedAttachmentsBasePath: linkedAttachmentsBasePath ? expandPath(linkedAttachmentsBasePath) : undefined
+                    betterBibtexDbPath: expandPath(config.get('zotero.betterBibtexDbPath', '~/Zotero/better-bibtex.sqlite'))
                 };
             }
         } else {
@@ -137,33 +130,13 @@ export class ZoteroService {
             zoteroLogger.info('Using manual configuration');
             options = {
                 zoteroDbPath: expandPath(config.get('zotero.zoteroDbPath', '~/Zotero/zotero.sqlite')),
-                betterBibtexDbPath: expandPath(config.get('zotero.betterBibtexDbPath', '~/Zotero/better-bibtex.sqlite')),
-                linkedAttachmentsBasePath: linkedAttachmentsBasePath ? expandPath(linkedAttachmentsBasePath) : undefined
+                betterBibtexDbPath: expandPath(config.get('zotero.betterBibtexDbPath', '~/Zotero/better-bibtex.sqlite'))
             };
         }
 
         zoteroLogger.info(`Database paths: zotero=${options.zoteroDbPath}, bbt=${options.betterBibtexDbPath}`);
-        if (options.linkedAttachmentsBasePath) {
-            zoteroLogger.info(`Linked attachments base path: ${options.linkedAttachmentsBasePath}`);
-        }
 
         return new ZoteroService(options);
-    }
-
-    /**
-     * Get singleton instance of ZoteroService (sync, for backwards compatibility)
-     * @deprecated Use getInstanceAsync() instead for auto-detection support
-     */
-    public static getInstance(): ZoteroService {
-        if (!ZoteroService.instance) {
-            const config = vscode.workspace.getConfiguration('document-viewer');
-            const options: ZoteroDatabaseOptions = {
-                zoteroDbPath: expandPath(config.get('zotero.zoteroDbPath', '~/Zotero/zotero.sqlite')),
-                betterBibtexDbPath: expandPath(config.get('zotero.betterBibtexDbPath', '~/Zotero/better-bibtex.sqlite'))
-            };
-            ZoteroService.instance = new ZoteroService(options);
-        }
-        return ZoteroService.instance;
     }
 
     /**
@@ -610,84 +583,6 @@ export class ZoteroService {
     }
 
     /**
-     * Get open options for a citation (PDF, Zotero, DOI)
-     */
-    public getOpenOptions(citeKey: string): ZoteroOpenOption[] {
-        if (!this.db || !this.bbt) {
-            vscode.window.showErrorMessage('Zotero database not connected');
-            return [];
-        }
-
-        const sqlZoteroKey = this.bbt.exec(queryZoteroKey(citeKey));
-        const zoteroKey = this.getFirstValue(sqlZoteroKey, 'zoteroKey');
-
-        if (!zoteroKey) {
-            vscode.window.showErrorMessage(`Could not find Zotero key for ${citeKey}`);
-            return [];
-        }
-
-        const options: ZoteroOpenOption[] = [];
-        options.push({ type: 'zotero', key: zoteroKey });
-
-        const sqlPdf = this.db.exec(queryPdfByZoteroKey(zoteroKey));
-        const pdfKey = this.getFirstValue(sqlPdf, 'pdfKey');
-
-        if (pdfKey) {
-            options.push({ type: 'pdf', key: pdfKey });
-        }
-
-        const sqlDoi = this.db.exec(queryDoiByZoteroKey(zoteroKey));
-        const doi = this.getFirstValue(sqlDoi, 'value');
-
-        if (doi) {
-            options.push({ type: 'doi', key: doi });
-        }
-
-        return options;
-    }
-
-    /**
-     * Get the full path for an attachment, handling linked files
-     */
-    public getAttachmentPath(pdfKey: string): string | null {
-        if (!this.db) return null;
-
-        try {
-            const result = this.db.exec(queryAttachmentPath(pdfKey));
-            if (result.length === 0) return null;
-
-            const { columns, values } = result[0];
-            if (values.length === 0) return null;
-
-            const pathIndex = columns.indexOf('path');
-            const linkModeIndex = columns.indexOf('linkMode');
-
-            const attachmentPath = values[0][pathIndex] as string;
-            const linkMode = values[0][linkModeIndex] as number;
-
-            // linkMode: 0 = imported file, 1 = imported URL, 2 = linked file, 3 = linked URL
-            if (linkMode === 2 && attachmentPath) {
-                // Linked file - might be relative to base path
-                if (this.options.linkedAttachmentsBasePath && !path.isAbsolute(attachmentPath)) {
-                    return path.join(this.options.linkedAttachmentsBasePath, attachmentPath);
-                }
-                return attachmentPath;
-            } else if (linkMode === 0 && attachmentPath) {
-                // Stored file - path is relative to storage folder
-                // Format is usually "storage:filename.pdf"
-                const storagePath = attachmentPath.replace('storage:', '');
-                const dataDir = path.dirname(this.options.zoteroDbPath);
-                return path.join(dataDir, 'storage', pdfKey, storagePath);
-            }
-
-            return null;
-        } catch (error) {
-            zoteroLogger.warn(`Failed to get attachment path for ${pdfKey}: ${error instanceof Error ? error.message : String(error)}`);
-            return null;
-        }
-    }
-
-    /**
      * Refresh the database connection (re-read database files)
      */
     public async refresh(): Promise<boolean> {
@@ -728,21 +623,5 @@ export class ZoteroService {
      */
     public getItemCount(): number {
         return this.lastItemCount;
-    }
-
-    /**
-     * Get the first value from a SQL result set
-     */
-    private getFirstValue(sqlResult: QueryExecResult[], columnName: string): string | null {
-        if (sqlResult.length === 0) {
-            return null;
-        }
-        const { columns, values } = sqlResult[0];
-        const columnIndex = columns.indexOf(columnName);
-
-        if (columnIndex === -1 || values.length === 0) {
-            return null;
-        }
-        return values[0][columnIndex] as string;
     }
 }

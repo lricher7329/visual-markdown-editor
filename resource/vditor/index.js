@@ -1,4 +1,4 @@
-import { openLink, hotKeys, imageParser, getToolbar, autoSymbol, onToolbarClick, createContextMenu, scrollEditor, cleanup, initComments, initZoomControls, initSearch, initCodeBlockCopy } from "./util.js";
+import { openLink, hotKeys, imageParser, getToolbar, autoSymbol, onToolbarClick, createContextMenu, scrollEditor, initComments, initZoomControls, initSearch, initCodeBlockCopy } from "./util.js";
 
 let state;
 function loadConfigs() {
@@ -25,11 +25,6 @@ function loadConfigs() {
   return state;
 }
 loadConfigs()
-
-// Cleanup when editor is disposed
-handler.on("dispose", () => {
-  cleanup();
-});
 
 handler.on("open", async (md) => {
   const { config } = md;

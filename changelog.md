@@ -5,6 +5,14 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+- The `document-viewer.zotero.linkedAttachmentsBasePath` setting, which had no effect: the code that used it was never reachable.
+
+### Changed
+- Development: CI and the publish workflow type-check the code (`yarn typecheck`); removed unused code (`lib.js`, the root `styles/` folder that was packaged into the `.vsix`, `src/vscode.css`, unused Zotero and comment functions, an unused file watcher per editor, and webview cleanup hooks that never ran).
+
 ## [2.5.0] - 2026-10-11
 
 ### Changed

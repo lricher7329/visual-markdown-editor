@@ -37,16 +37,10 @@ export interface ZoteroItem {
     issn?: string;
 }
 
-export interface ZoteroOpenOption {
-    type: 'pdf' | 'zotero' | 'doi';
-    key: string;
-}
-
 export interface ZoteroDatabaseOptions {
     zoteroDbPath: string;
     /** Legacy Better BibTeX database; newer versions store keys in Zotero's citationKey field */
     betterBibtexDbPath?: string;
-    linkedAttachmentsBasePath?: string;
 }
 
 export interface ZoteroLibrary {

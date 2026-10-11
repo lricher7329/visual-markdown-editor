@@ -314,11 +314,6 @@
 					"default": "~/Zotero/better-bibtex.sqlite",
 					"description": "Optional path to a legacy Better BibTeX database (only used when autoDetect is disabled). Current Better BibTeX versions store citation keys in Zotero's own database, so this file is only needed for older versions."
 				},
-				"document-viewer.zotero.linkedAttachmentsBasePath": {
-					"type": "string",
-					"default": "",
-					"description": "Base path for linked file attachments. Required if you use linked files instead of stored copies in Zotero."
-				},
 				"document-viewer.zotero.libraryFilter": {
 					"type": "string",
 					"enum": [

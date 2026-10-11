@@ -36,13 +36,15 @@ Branch: `master`
   - `document-viewer.zotero.showStatusBar` is never read
   - The `document-viewer.editorTheme` enum lists 3 of the 10 themes the theme picker writes, so VS Code flags valid choices as invalid
   - `document-viewer.pandoc.path` and `document-viewer.chromiumPath` should be `"scope": "machine"`, so workspace settings can't point them at another program
-- [ ] 2.5 — Dead code:
+- [x] 2.5 — Dead code (removed 2026-10-11, along with the `zotero.linkedAttachmentsBasePath` setting, which only the removed code used):
   - `lib.js` (old dependency bundler) and the root `styles/` folder, which nothing references but is packaged into the `.vsix`; `src/vscode.css`
   - Unused Zotero code: `ZoteroService.getOpenOptions`, `getAttachmentPath` and the deprecated sync `getInstance()`, `getItemsByCiteKeys` in `bibTexService.ts`, and the string-built SQL in `zoteroQueries.ts` that only they use (`queryZoteroKey`, `queryPdfByZoteroKey`, `queryDoiByZoteroKey`, `queryAttachmentPath`)
   - `CommentService.adjustLineNumbers`; the per-editor file watcher in `handler.ts`, whose `fileChange` event nothing listens to; the webview's `dispose` listener, which the extension no longer sends
-- [ ] 2.6 — Add a typecheck (`tsc --noEmit`) to CI: esbuild and the linter don't type-check, so a type error can ship
+- [x] 2.6 — Add a typecheck (`tsc --noEmit`) to CI: esbuild and the linter don't type-check, so a type error can ship
 
-Known limitation, not scheduled: Zotero changes still in `zotero.sqlite-wal` aren't visible until Zotero checkpoints the database, because sql.js reads only the main file.
+Known limitations, not scheduled:
+- Zotero changes still in `zotero.sqlite-wal` aren't visible until Zotero checkpoints the database, because sql.js reads only the main file.
+- Sidecar comments are anchored to line numbers and likely drift when lines are added or removed above them. `CommentService.adjustLineNumbers` was meant for this but was never called (removed in 2.5); the editor replaces the whole document on each change, so there are no per-line edits to adjust from.
 
 ### M1 — Modernize and harden (v2.5.0)  `[x] complete`
 Branch: `milestone/modernize-and-harden` · Merged: 2026-10-11 · Released as v2.5.0

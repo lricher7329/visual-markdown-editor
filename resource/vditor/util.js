@@ -1,6 +1,3 @@
-// Cleanup registry for event listeners
-const cleanupFunctions = [];
-
 // Constants
 const SCROLL_OFFSET = 70;
 const SCROLL_HACK_INTERVAL_MS = 10;
@@ -8,11 +5,6 @@ const CONTEXT_MENU_OFFSET_X = 10;
 const SEARCH_DEBOUNCE_MS = 150;
 const TEXT_PREVIEW_MAX_LENGTH = 100;
 const TEXT_PREVIEW_SHORT_LENGTH = 60;
-
-export function cleanup() {
-    cleanupFunctions.forEach(fn => fn());
-    cleanupFunctions.length = 0;
-}
 
 const latexSymbols = [
     // Operators
@@ -142,12 +134,6 @@ export function initZoomControls() {
         }
     };
     document.addEventListener('keydown', zoomKeyHandler);
-
-    // Register cleanup
-    cleanupFunctions.push(() => {
-        document.removeEventListener('wheel', wheelHandler);
-        document.removeEventListener('keydown', zoomKeyHandler);
-    });
 }
 
 export async function getToolbar() {
@@ -351,15 +337,6 @@ export const openLink = () => {
     content.addEventListener('auxclick', clickCallback);
     resetEl?.addEventListener("scroll", scrollHandler);
     irEl?.addEventListener('click', irClickHandler);
-
-    // Register cleanup
-    cleanupFunctions.push(() => {
-        content.removeEventListener('dblclick', clickCallback);
-        content.removeEventListener('click', clickCallback);
-        content.removeEventListener('auxclick', clickCallback);
-        resetEl?.removeEventListener("scroll", scrollHandler);
-        irEl?.removeEventListener('click', irClickHandler);
-    });
 }
 
 export function scrollEditor(top) {
@@ -389,11 +366,6 @@ export function onToolbarClick(editor) {
     };
 
     toolbar.addEventListener("click", clickHandler);
-
-    // Register cleanup
-    cleanupFunctions.push(() => {
-        toolbar.removeEventListener("click", clickHandler);
-    });
 }
 
 export const createContextMenu = (editor) => {
@@ -459,13 +431,6 @@ export const createContextMenu = (editor) => {
     document.addEventListener("mousedown", mousedownHandler);
     document.addEventListener("contextmenu", contextmenuHandler);
     menu.addEventListener("click", menuClickHandler);
-
-    // Register cleanup
-    cleanupFunctions.push(() => {
-        document.removeEventListener("mousedown", mousedownHandler);
-        document.removeEventListener("contextmenu", contextmenuHandler);
-        menu.removeEventListener("click", menuClickHandler);
-    });
 }
 
 export const imageParser = (viewAbsoluteLocal) => {
@@ -490,11 +455,6 @@ export const imageParser = (viewAbsoluteLocal) => {
     observer.observe(document, {
         childList: true,
         subtree: true
-    });
-
-    // Register cleanup
-    cleanupFunctions.push(() => {
-        observer.disconnect();
     });
 }
 
@@ -625,15 +585,6 @@ export const autoSymbol = (handler, editor, config) => {
         }
     };
     window.addEventListener('focus', focusHandler);
-
-    // Register cleanup
-    cleanupFunctions.push(() => {
-        window.removeEventListener('keydown', keydownHandler, isMac ? true : undefined);
-        window.removeEventListener('resize', resizeHandler);
-        window.removeEventListener('blur', blurHandler);
-        window.removeEventListener('focus', focusHandler);
-        document.execCommand = _exec; // Restore original
-    });
 }
 
 /**
@@ -1022,9 +973,6 @@ export function showSearchDialog() {
     prevBtn.addEventListener('click', () => navigateSearch(-1));
     nextBtn.addEventListener('click', () => navigateSearch(1));
     closeBtn.addEventListener('click', closeSearchDialog);
-
-    // Register cleanup
-    cleanupFunctions.push(closeSearchDialog);
 }
 
 /**
@@ -1258,11 +1206,6 @@ export function initSearch() {
 
     // Use capture phase to intercept before other handlers
     window.addEventListener('keydown', searchKeyHandler, true);
-
-    cleanupFunctions.push(() => {
-        window.removeEventListener('keydown', searchKeyHandler, true);
-        closeSearchDialog();
-    });
 }
 
 // ============================================
@@ -1501,9 +1444,5 @@ export function initCodeBlockCopy() {
     observer.observe(editorContent, {
         childList: true,
         subtree: true
-    });
-
-    cleanupFunctions.push(() => {
-        observer.disconnect();
     });
 }

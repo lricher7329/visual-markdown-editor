@@ -41,7 +41,6 @@ interface EventHandlers {
     openExportOptions: () => void | PromiseLike<void>;
     // Internal events
     externalUpdate: (e: vscode.TextDocumentChangeEvent) => void | PromiseLike<void>;
-    fileChange: (e: vscode.Uri) => void | PromiseLike<void>;
     dispose: () => void | PromiseLike<void>;
 }
 
@@ -92,11 +91,6 @@ export class Handler {
     public static bind(panel: WebviewPanel, uri: vscode.Uri): Handler {
         const eventEmitter = new EventEmitter();
 
-        const fileWatcher = vscode.workspace.createFileSystemWatcher(uri.fsPath);
-        fileWatcher.onDidChange(e => {
-            eventEmitter.emit("fileChange", e);
-        });
-
         const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
             if (e.document.uri.toString() === uri.toString() && e.contentChanges.length > 0) {
                 eventEmitter.emit("externalUpdate", e);
@@ -104,7 +98,6 @@ export class Handler {
         });
 
         panel.onDidDispose(() => {
-            fileWatcher.dispose();
             changeDocumentSubscription.dispose();
             eventEmitter.emit("dispose");
         });
