@@ -40,46 +40,42 @@ export async function exportByType(filePath, data, type, config) {
         executablePath: config["executablePath"] || undefined
     }
 
+    // Errors propagate to MarkdownService.exportMarkdown, which reports them
     const puppeteer = require("puppeteer-core")
-    let browser = await puppeteer.launch(options).catch(error => {
-        showErrorMessage("puppeteer.launch()", error)
-    })
-    let page = await browser.newPage().catch(error => {
-        showErrorMessage("browser.newPage()", error)
-    });
-    await page.goto(URI.file(tmpfilename).toString(), { waitUntil: "networkidle0" }).catch(error => {
-        showErrorMessage("page.goto()", error)
-    });
+    let browser
+    try {
+        browser = await puppeteer.launch(options)
+        const page = await browser.newPage()
+        await page.goto(URI.file(tmpfilename).toString(), { waitUntil: "networkidle0" })
+        await waitForMermaid(page)
 
-    // generate pdf
-    if (type == "pdf") {
-        // https://pptr.dev/api/puppeteer.pdfoptions
-        const options = {
-            format: config["format"] || "A4",
-            printBackground: config["printBackground"] || true,
-            margin: {
-                top: config["margin"]["top"],
-                right: config["margin"]["right"],
-                bottom: config["margin"]["bottom"],
-                left: config["margin"]["left"]
+        // generate pdf
+        if (type == "pdf") {
+            // https://pptr.dev/api/puppeteer.pdfoptions
+            const options = {
+                format: config["format"] || "A4",
+                printBackground: config["printBackground"] ?? true,
+                margin: {
+                    top: config["margin"]["top"],
+                    right: config["margin"]["right"],
+                    bottom: config["margin"]["bottom"],
+                    left: config["margin"]["left"]
+                }
             }
+            const pdf = await page.pdf(options)
+
+            const pdfBytes = await createOutline(pdf, data)
+            fs.writeFileSync(targetFilePath, pdfBytes)
         }
-        const pdf = await page.pdf(options).catch(error => {
-            showErrorMessage("page.pdf", error)
-        })
+    } finally {
+        await browser?.close()
 
-        const pdfBytes = await createOutline(pdf, data)
-        fs.writeFileSync(targetFilePath, pdfBytes)
-
-    }
-
-    await browser.close()
-
-    // delete temporary file
-    let debug = config["debug"] || false
-    if (!debug) {
-        if (isExistsPath(tmpfilename)) {
-            fs.unlink(tmpfilename, () => { })
+        // delete temporary file
+        let debug = config["debug"] || false
+        if (!debug) {
+            if (isExistsPath(tmpfilename)) {
+                fs.unlink(tmpfilename, () => { })
+            }
         }
     }
 
@@ -87,14 +83,17 @@ export async function exportByType(filePath, data, type, config) {
 
 }
 
-function showErrorMessage(msg, error) {
-    if (!error) return;
-    console.error("ERROR: " + msg)
-    console.log("ERROR: " + msg)
-    if (error) {
-        console.error(error.toString())
-        console.log(error)
-    }
+/*
+ * mermaid renders asynchronously after load, so networkidle0 alone can print
+ * empty diagrams. Gives up after a timeout (e.g. offline, CDN unreachable).
+ */
+async function waitForMermaid(page) {
+    await page.waitForFunction(
+        () => !window.mermaid || Array.from(document.querySelectorAll(".mermaid")).every(el => el.querySelector("svg")),
+        { timeout: 15000 }
+    ).catch(() => {
+        console.warn("[pretty-md-pdf] Timed out waiting for mermaid diagrams to render")
+    })
 }
 
 function isExistsPath(path) {

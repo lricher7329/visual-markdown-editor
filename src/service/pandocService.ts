@@ -7,12 +7,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { exec, spawn } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { generateBibFile, extractCitations } from './zotero/bibTexService';
 import { Output } from '../common/Output';
 
-const execAsync = promisify(exec);
+// Never go through a shell: file paths may contain spaces or shell metacharacters
+const execFileAsync = promisify(execFile);
 
 /**
  * Result of Pandoc installation check
@@ -72,7 +73,7 @@ export async function checkPandocInstallation(): Promise<PandocStatus> {
     const pandocCommand = customPath || 'pandoc';
 
     try {
-        const { stdout } = await execAsync(`"${pandocCommand}" --version`);
+        const { stdout } = await execFileAsync(pandocCommand, ['--version']);
         const versionMatch = stdout.match(/pandoc(?:\.exe)?\s+(\d+\.\d+(?:\.\d+)?)/i);
         const version = versionMatch ? versionMatch[1] : 'unknown';
 
@@ -81,8 +82,8 @@ export async function checkPandocInstallation(): Promise<PandocStatus> {
         if (!pandocPath) {
             try {
                 const whichCmd = process.platform === 'win32' ? 'where' : 'which';
-                const { stdout: pathResult } = await execAsync(`${whichCmd} pandoc`);
-                pandocPath = pathResult.trim().split('\n')[0];
+                const { stdout: pathResult } = await execFileAsync(whichCmd, ['pandoc']);
+                pandocPath = pathResult.trim().split(/\r?\n/)[0];
             } catch {
                 pandocPath = 'pandoc';
             }
@@ -93,7 +94,7 @@ export async function checkPandocInstallation(): Promise<PandocStatus> {
             version,
             path: pandocPath
         };
-    } catch (error) {
+    } catch {
         return {
             installed: false,
             error: 'Pandoc is not installed or not in PATH. Install from https://pandoc.org/installing.html'
@@ -161,13 +162,13 @@ export async function exportWithPandoc(
         };
     }
 
+    let bibFilePath: string | null = null;
     try {
         // Read markdown content
         const markdown = await fs.readFile(options.inputPath, 'utf8');
 
         // Check for citations
         const citeKeys = extractCitations(markdown);
-        let bibFilePath: string | null = null;
         let citationsFound: string[] = [];
         let citationsMissing: string[] = [];
 
@@ -189,10 +190,6 @@ export async function exportWithPandoc(
                 );
 
                 if (action === 'Cancel') {
-                    // Clean up temp bib file
-                    if (bibFilePath) {
-                        await fs.unlink(bibFilePath).catch(() => { /* ignore cleanup errors */ });
-                    }
                     return {
                         success: false,
                         citationsFound: citationsFound.length,
@@ -274,7 +271,6 @@ export async function exportWithPandoc(
 
         await new Promise<void>((resolve, reject) => {
             const proc = spawn(pandocPath, args, {
-                shell: true,
                 cwd: path.dirname(options.inputPath)
             });
 
@@ -296,11 +292,6 @@ export async function exportWithPandoc(
                 reject(error);
             });
         });
-
-        // Clean up temp bib file
-        if (bibFilePath) {
-            await fs.unlink(bibFilePath).catch(() => { /* ignore cleanup errors */ });
-        }
 
         vscode.window.showInformationMessage(
             `Export to ${options.outputFormat.toUpperCase()} complete!` +
@@ -325,6 +316,11 @@ export async function exportWithPandoc(
             citationsMissing: [],
             error: errorMessage
         };
+    } finally {
+        // Clean up temp bib file
+        if (bibFilePath) {
+            await fs.unlink(bibFilePath).catch(() => { /* ignore cleanup errors */ });
+        }
     }
 }
 

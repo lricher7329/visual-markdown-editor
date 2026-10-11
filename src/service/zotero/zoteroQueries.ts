@@ -23,14 +23,12 @@ export const queryItems = `
         items.dateModified
     FROM
         items
-        INNER JOIN itemData ON itemData.itemID = items.itemID
-        INNER JOIN itemDataValues ON itemData.valueID = itemDataValues.valueID
         INNER JOIN itemData as parentItemData ON parentItemData.itemID = items.itemID
         INNER JOIN itemDataValues as parentItemDataValues ON parentItemDataValues.valueID = parentItemData.valueID
         INNER JOIN fields ON fields.fieldID = parentItemData.fieldID
         INNER JOIN itemTypes ON itemTypes.itemTypeID = items.itemTypeID
     WHERE
-        fields.fieldName IN ('title', 'date', 'abstractNote', 'publicationTitle', 'bookTitle', 'proceedingsTitle', 'DOI', 'volume', 'issue', 'pages', 'publisher', 'place', 'url', 'ISBN', 'ISSN');
+        fields.fieldName IN ('title', 'date', 'abstractNote', 'publicationTitle', 'bookTitle', 'proceedingsTitle', 'DOI', 'volume', 'issue', 'pages', 'publisher', 'place', 'url', 'ISBN', 'ISSN', 'citationKey');
 `;
 
 // Query for item tags

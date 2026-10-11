@@ -1,6 +1,6 @@
 import { adjustImgPath, getWorkspacePath } from '@/common/fileUtil';
-import { readFileSync, writeFileSync } from 'fs';
-import { basename, isAbsolute, parse, resolve, relative } from 'path';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { basename, dirname, isAbsolute, join, parse, resolve, relative } from 'path';
 import * as vscode from 'vscode';
 import { Handler } from '../common/handler';
 import { Util } from '../common/util';
@@ -19,6 +19,15 @@ import { ExportOption } from '../types/messages';
 /** Available count display modes for the status bar */
 type CountMode = 'characters' | 'words' | 'lines' | 'pages';
 const COUNT_MODES: CountMode[] = ['characters', 'words', 'lines', 'pages'];
+
+/** Commands the webview may ask the extension to run (see resource/vditor/util.js) */
+const WEBVIEW_COMMANDS = ['document-viewer.markdown.paste'];
+
+/** Link schemes that open without confirmation; links come from the rendered document */
+const EXTERNAL_LINK_SCHEMES = ['http', 'https', 'mailto', 'zotero'];
+
+/** Webview URIs for local files (see Webview.asWebviewUri) */
+const LOCAL_RESOURCE_PREFIX = /^https:\/\/file\+\.vscode-resource\.vscode-cdn\.net/i;
 
 /**
  * Custom text editor provider for markdown files.
@@ -193,8 +202,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     /**
      * Open the export options picker. Can be called from event handler or command.
      */
-    public static async openExportOptions(extensionPath: string): Promise<void> {
-        const document = this._activeDocument;
+    public static async openExportOptions(context: vscode.ExtensionContext, target?: vscode.TextDocument): Promise<void> {
+        const document = target ?? this._activeDocument;
         if (!document) {
             vscode.window.showWarningMessage('No active markdown editor. Open a markdown file first.');
             return;
@@ -303,8 +312,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             }
         }
 
-        // Execute export
-        vscode.commands.executeCommand('workbench.action.files.save');
+        // Exporters read the file from disk, so the save must finish first
+        await document.save();
 
         if (exportType === 'pdf-pandoc' || exportType === 'docx-pandoc') {
             const format = exportType === 'pdf-pandoc' ? 'pdf' : 'docx';
@@ -315,14 +324,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                 outputFormat: format,
                 cslStyle,
                 referenceDoc
-            }, extensionPath);
+            }, context.extensionPath);
         } else {
-            // For non-Pandoc exports, we need access to the context
-            // This is a limitation - we'll show a message for now
-            const markdownService = new MarkdownService(vscode.extensions.getExtension('LawrenceRicher.visual-markdown-editor')?.extensionUri
-                ? { extensionPath, extensionUri: vscode.Uri.file(extensionPath) } as vscode.ExtensionContext
-                : undefined as unknown as vscode.ExtensionContext);
-            markdownService.exportMarkdown(uri, { type: exportType });
+            new MarkdownService(context).exportMarkdown(uri, { type: exportType });
         }
     }
 
@@ -352,6 +356,29 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         return data;
     }
 
+    /**
+     * Folders the webview may load files from: the extension's resources, the
+     * document's folder and the workspace. Absolute image paths need the whole disk.
+     */
+    private getResourceRoots(folderPath: vscode.Uri): vscode.Uri[] {
+        const roots = [
+            vscode.Uri.file(join(this.extensionPath, 'resource')),
+            folderPath,
+            ...(vscode.workspace.workspaceFolders ?? []).map(folder => folder.uri),
+        ];
+        if (Global.getConfig<boolean>(ConfigKeys.viewAbsoluteLocal)) {
+            roots.push(vscode.Uri.file('/'), ...this.getFolders());
+        }
+        return roots;
+    }
+
+    private isInResourceRoots(filePath: string, folderPath: vscode.Uri): boolean {
+        return this.getResourceRoots(folderPath).some(root => {
+            const rel = relative(root.fsPath, filePath);
+            return !rel.startsWith('..') && !isAbsolute(rel);
+        });
+    }
+
     resolveCustomTextEditor(
         document: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
@@ -362,7 +389,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         const folderPath = vscode.Uri.joinPath(uri, '..');
         webview.options = {
             enableScripts: true,
-            localResourceRoots: [vscode.Uri.file("/"), ...this.getFolders()]
+            localResourceRoots: this.getResourceRoots(folderPath)
         };
         const handler = Handler.bind(webviewPanel, uri);
         this.handleMarkdown(document, handler, folderPath);
@@ -396,9 +423,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         handler.panel.onDidDispose(() => {
             if (MarkdownEditorProvider._activeDocument === document) {
                 MarkdownEditorProvider._activeDocument = null;
+                MarkdownEditorProvider._activeHandler = null;
             }
             this.countStatus.hide();
-            handler.emit("dispose");
         });
 
         let lastManualSaveTime = 0;
@@ -423,25 +450,33 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             this.updateCount(content);
             handler.emit("update", updatedText);
         }).on("command", (command) => {
-            vscode.commands.executeCommand(command);
-        }).on("openLink", (uriString) => {
-            const resReg = /https:\/\/file.*\.net/i;
-            if (uriString.match(resReg)) {
-                const localPath = uriString.replace(resReg, '');
-                vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(localPath));
-            } else {
-                vscode.env.openExternal(vscode.Uri.parse(uriString));
+            // The webview is untrusted (it renders arbitrary markdown); don't run arbitrary commands
+            if (WEBVIEW_COMMANDS.includes(command)) {
+                vscode.commands.executeCommand(command);
             }
+        }).on("openLink", async (uriString) => {
+            if (LOCAL_RESOURCE_PREFIX.test(uriString)) {
+                const localPath = uriString.replace(LOCAL_RESOURCE_PREFIX, '');
+                vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(localPath));
+                return;
+            }
+            const target = vscode.Uri.parse(uriString);
+            if (!EXTERNAL_LINK_SCHEMES.includes(target.scheme)) {
+                const choice = await vscode.window.showWarningMessage(
+                    `Open this ${target.scheme}: link?`, { modal: true, detail: uriString }, 'Open');
+                if (choice !== 'Open') return;
+            }
+            vscode.env.openExternal(target);
         }).on("scroll", ({ scrollTop }) => {
             this.state.update(`scrollTop_${document.uri.fsPath}`, scrollTop);
         }).on("img", async (img) => {
             const { relPath, fullPath } = adjustImgPath(uri);
             const imagePath = isAbsolute(fullPath) ? fullPath : `${resolve(uri.fsPath, "..")}/${relPath}`.replace(/\\/g, "/");
+            mkdirSync(dirname(imagePath), { recursive: true });
             writeFileSync(imagePath, Buffer.from(img, 'binary'));
             const fileName = parse(relPath).name;
             const adjustRelPath = await MarkdownService.imgExtGuide(imagePath, relPath);
-            vscode.env.clipboard.writeText(`![${fileName}](${adjustRelPath})`);
-            vscode.commands.executeCommand("editor.action.clipboardPasteAction");
+            handler.emit("insertMarkdown", `![${fileName}](${adjustRelPath})`);
         }).on("quickOpen", () => {
             vscode.commands.executeCommand('workbench.action.quickOpen');
         }).on("insertImage", async () => {
@@ -455,8 +490,17 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                 title: 'Select Image'
             });
             if (result && result[0]) {
-                const imagePath = result[0].fsPath;
+                let imagePath = result[0].fsPath;
                 const docDir = resolve(uri.fsPath, "..");
+                if (!this.isInResourceRoots(imagePath, folderPath)) {
+                    const choice = await vscode.window.showWarningMessage(
+                        `${basename(imagePath)} is outside this document's folder and workspace, so the editor can't display it. Copy it into the document's image folder?`,
+                        'Copy', 'Insert Anyway');
+                    if (!choice) return;
+                    if (choice === 'Copy') {
+                        imagePath = this.copyIntoImageFolder(imagePath, uri);
+                    }
+                }
                 // Calculate relative path from document to image
                 const relativePath = relative(docDir, imagePath).replace(/\\/g, "/");
                 const fileName = parse(imagePath).name;
@@ -477,7 +521,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             this.updateCount(newContent);
             vscode.commands.executeCommand('workbench.action.files.save');
         }).on("export", async (option: ExportOption) => {
-            vscode.commands.executeCommand('workbench.action.files.save');
+            await document.save();
 
             // Route Pandoc export types to PandocService
             if (option.type === 'pdf-pandoc' || option.type === 'docx-pandoc') {
@@ -494,123 +538,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                 new MarkdownService(this.context).exportMarkdown(uri, option);
             }
         }).on("openExportOptions", async () => {
-            // Step 1: Choose export format
-            const formatItems: vscode.QuickPickItem[] = [
-                { label: 'PDF (with Citations)', description: 'Export to PDF using Pandoc with bibliography' },
-                { label: 'DOCX (with Citations)', description: 'Export to Word using Pandoc with bibliography' },
-                { label: 'PDF', description: 'Export to PDF (no citation processing)' },
-                { label: 'DOCX', description: 'Export to Word (no citation processing)' },
-                { label: 'HTML', description: 'Export to HTML' }
-            ];
-
-            const formatChoice = await vscode.window.showQuickPick(formatItems, {
-                placeHolder: 'Select export format'
-            });
-            if (!formatChoice) return;
-
-            // Map selection to export type
-            const formatMap: Record<string, ExportOption['type']> = {
-                'PDF (with Citations)': 'pdf-pandoc',
-                'DOCX (with Citations)': 'docx-pandoc',
-                'PDF': 'pdf',
-                'DOCX': 'docx',
-                'HTML': 'html'
-            };
-            const exportType = formatMap[formatChoice.label];
-
-            // For Pandoc exports, show citation style picker
-            let cslStyle: string | undefined;
-            let referenceDoc: string | undefined;
-
-            if (exportType === 'pdf-pandoc' || exportType === 'docx-pandoc') {
-                // Step 2: Choose citation style
-                const config = vscode.workspace.getConfiguration('document-viewer');
-                const currentStyle = config.get<string>('pandoc.cslStyle', 'apa');
-
-                const styleItems: vscode.QuickPickItem[] = [
-                    { label: 'apa', description: 'APA 7th Edition' + (currentStyle === 'apa' ? ' (current default)' : '') },
-                    { label: 'chicago-author-date', description: 'Chicago Author-Date' + (currentStyle === 'chicago-author-date' ? ' (current default)' : '') },
-                    { label: 'vancouver', description: 'Vancouver (medicine, nursing)' + (currentStyle === 'vancouver' ? ' (current default)' : '') },
-                    { label: 'ieee', description: 'IEEE (engineering, CS)' + (currentStyle === 'ieee' ? ' (current default)' : '') },
-                    { label: 'nature', description: 'Nature (natural sciences)' + (currentStyle === 'nature' ? ' (current default)' : '') },
-                    { label: 'mla', description: 'MLA (literature, arts)' + (currentStyle === 'mla' ? ' (current default)' : '') },
-                    { label: '$(file) Custom CSL file...', description: 'Browse for a .csl file' }
-                ];
-
-                const styleChoice = await vscode.window.showQuickPick(styleItems, {
-                    placeHolder: 'Select citation style'
-                });
-                if (!styleChoice) return;
-
-                if (styleChoice.label.includes('Custom CSL file')) {
-                    const cslFiles = await vscode.window.showOpenDialog({
-                        canSelectFiles: true,
-                        canSelectFolders: false,
-                        canSelectMany: false,
-                        filters: { 'CSL Style': ['csl'] },
-                        title: 'Select Citation Style File'
-                    });
-                    if (!cslFiles || cslFiles.length === 0) return;
-                    cslStyle = cslFiles[0].fsPath;
-                } else {
-                    cslStyle = styleChoice.label;
-                }
-
-                // Step 3: For DOCX, optionally choose template
-                if (exportType === 'docx-pandoc') {
-                    const templateItems: vscode.QuickPickItem[] = [
-                        { label: 'Use default template', description: 'Pandoc\'s built-in DOCX template' },
-                        { label: '$(file) Choose custom template...', description: 'Browse for a .docx template' }
-                    ];
-
-                    const currentTemplate = config.get<string>('pandoc.referenceDoc', '');
-                    if (currentTemplate) {
-                        templateItems.splice(1, 0, {
-                            label: '$(check) Use configured template',
-                            description: currentTemplate
-                        });
-                    }
-
-                    const templateChoice = await vscode.window.showQuickPick(templateItems, {
-                        placeHolder: 'Select DOCX template (optional)'
-                    });
-                    if (!templateChoice) return;
-
-                    if (templateChoice.label.includes('Choose custom template')) {
-                        const docxFiles = await vscode.window.showOpenDialog({
-                            canSelectFiles: true,
-                            canSelectFolders: false,
-                            canSelectMany: false,
-                            filters: { 'Word Template': ['docx'] },
-                            title: 'Select DOCX Template'
-                        });
-                        if (!docxFiles || docxFiles.length === 0) {
-                            // User cancelled the file dialog
-                            return;
-                        }
-                        referenceDoc = docxFiles[0].fsPath;
-                    } else if (templateChoice.label.includes('Use configured template')) {
-                        referenceDoc = currentTemplate;
-                    }
-                }
-            }
-
-            // Execute export
-            vscode.commands.executeCommand('workbench.action.files.save');
-
-            if (exportType === 'pdf-pandoc' || exportType === 'docx-pandoc') {
-                const format = exportType === 'pdf-pandoc' ? 'pdf' : 'docx';
-                const outputPath = getOutputPath(uri.fsPath, format);
-                await exportWithPandoc({
-                    inputPath: uri.fsPath,
-                    outputPath,
-                    outputFormat: format,
-                    cslStyle,
-                    referenceDoc
-                }, this.extensionPath);
-            } else {
-                new MarkdownService(this.context).exportMarkdown(uri, { type: exportType });
-            }
+            await MarkdownEditorProvider.openExportOptions(this.context, document);
         }).on("theme", async (theme) => {
             if (!theme) {
                 const currentTheme = Global.getConfig<string>(ConfigKeys.editorTheme);
@@ -666,11 +594,28 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         webview.html = Util.buildPath(
             readFileSync(`${this.extensionPath}/resource/vditor/index.html`, 'utf8')
                 .replace("{{rootPath}}", rootPath)
+                .replace(/{{cspSource}}/g, webview.cspSource)
                 .replace("{{baseUrl}}", baseUrl)
                 .replace(`{{configs}}`, JSON.stringify({
                     platform: platform()
                 })),
             webview, contextPath);
+    }
+
+    /**
+     * Copy an image into the folder pasted images go to (document-viewer.pasterImgPath)
+     */
+    private copyIntoImageFolder(imagePath: string, uri: vscode.Uri): string {
+        const { relPath, fullPath } = adjustImgPath(uri);
+        const pastedPath = isAbsolute(fullPath) ? fullPath : join(resolve(uri.fsPath, ".."), relPath);
+        const { name, ext } = parse(imagePath);
+        let target = join(dirname(pastedPath), `${name}${ext}`);
+        if (existsSync(target)) {
+            target = join(dirname(pastedPath), `${name}-${Date.now()}${ext}`);
+        }
+        mkdirSync(dirname(target), { recursive: true });
+        copyFileSync(imagePath, target);
+        return target;
     }
 
     private updateCount(content: string): void {

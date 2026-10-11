@@ -59,22 +59,26 @@ function mapItemTypeToBibtex(itemType: string): string {
     return typeMap[itemType] || 'misc';
 }
 
+const BIBTEX_ESCAPES: Record<string, string> = {
+    '\\': '\\textbackslash{}',
+    '&': '\\&',
+    '%': '\\%',
+    '$': '\\$',
+    '#': '\\#',
+    '_': '\\_',
+    '{': '\\{',
+    '}': '\\}',
+    '~': '\\textasciitilde{}',
+    '^': '\\textasciicircum{}'
+};
+
 /**
  * Escape special BibTeX characters in a string
  */
-function escapeBibtex(value: string): string {
+export function escapeBibtex(value: string): string {
     if (!value) return '';
-    return value
-        .replace(/\\/g, '\\textbackslash{}')
-        .replace(/&/g, '\\&')
-        .replace(/%/g, '\\%')
-        .replace(/\$/g, '\\$')
-        .replace(/#/g, '\\#')
-        .replace(/_/g, '\\_')
-        .replace(/\{/g, '\\{')
-        .replace(/\}/g, '\\}')
-        .replace(/~/g, '\\textasciitilde{}')
-        .replace(/\^/g, '\\textasciicircum{}');
+    // Single pass, so the braces of \textbackslash{} are not escaped again
+    return value.replace(/[\\&%$#_{}~^]/g, ch => BIBTEX_ESCAPES[ch]);
 }
 
 /**
@@ -194,14 +198,20 @@ function itemToBibtex(item: ZoteroItem): string {
  * Matches @citeKey patterns (Pandoc-style citations)
  */
 export function extractCitations(markdown: string): string[] {
+    // Code is not prose: skip fenced blocks and inline code (@decorators, CSS @media, ...)
+    const prose = markdown
+        .replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm, '')
+        .replace(/`[^`\n]*`/g, '');
+
     // Match @citekey patterns
-    // - Can start with @ or be inside brackets like [@key] or [@key1; @key2]
+    // - Can start with @ or be inside brackets like [@key], [-@key] or [@key1; @key2]
+    // - Not preceded by a word character or '/', which rules out emails and URLs
     // - Key can contain alphanumeric, underscore, hyphen, colon
-    const regex = /@([a-zA-Z0-9_:.-]+[a-zA-Z0-9])/g;
+    const regex = /(?<![\w/])@([a-zA-Z0-9_:.-]+[a-zA-Z0-9])/g;
     const matches = new Set<string>();
 
     let match;
-    while ((match = regex.exec(markdown)) !== null) {
+    while ((match = regex.exec(prose)) !== null) {
         matches.add(match[1]);
     }
 
@@ -236,7 +246,8 @@ export async function generateBibFile(
     // Get Zotero service and fetch items
     const zoteroService = await ZoteroService.getInstanceAsync();
     await zoteroService.connectIfNeeded();
-    const allItems = await zoteroService.getItems();
+    // Ignore the picker's library filter: every cited item belongs in the bibliography
+    const allItems = await zoteroService.getItems('all');
 
     // Build a map of citeKey -> item
     const itemMap = new Map<string, ZoteroItem>();
@@ -287,7 +298,8 @@ export async function getItemsByCiteKeys(citeKeys: string[]): Promise<{
 }> {
     const zoteroService = await ZoteroService.getInstanceAsync();
     await zoteroService.connectIfNeeded();
-    const allItems = await zoteroService.getItems();
+    // Ignore the picker's library filter: every cited item belongs in the bibliography
+    const allItems = await zoteroService.getItems('all');
 
     const itemMap = new Map<string, ZoteroItem>();
     for (const item of allItems) {

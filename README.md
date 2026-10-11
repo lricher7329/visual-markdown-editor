@@ -36,7 +36,7 @@ Insert citations directly from your Zotero library:
 | --------------------------------------------- | ------------------------------ | --------------------------------- |
 | `document-viewer.zotero.enabled`            | Enable Zotero integration      | `true`                          |
 | `document-viewer.zotero.zoteroDbPath`       | Path to Zotero database        | `~/Zotero/zotero.sqlite`        |
-| `document-viewer.zotero.betterBibtexDbPath` | Path to Better BibTeX database | `~/Zotero/better-bibtex.sqlite` |
+| `document-viewer.zotero.betterBibtexDbPath` | Legacy Better BibTeX database (older versions only) | `~/Zotero/better-bibtex.sqlite` |
 
 ## Exporting
 
@@ -100,6 +100,7 @@ Markdown is a powerful approach to documentation that treats writing as code. Yo
 | Switch to VS Code editor | `Ctrl+Alt+E`   | `Ctrl+Cmd+E`  |
 | Save                     | `Ctrl+S`       | `Cmd+S`       |
 | Paste plain text         | `Ctrl+Shift+V` | `Cmd+Shift+V` |
+| Insert Zotero citation   | `Shift+Alt+Z`  | `Shift+Option+Z` |
 
 ## Toolbar
 
@@ -158,7 +159,7 @@ Or use "Open With..." to choose an editor per file.
 | `document-viewer.pasterImgPath`             | Path template for pasted images | `image/${fileName}/${now}.png`  |
 | `document-viewer.zotero.enabled`            | Enable Zotero integration       | `true`                          |
 | `document-viewer.zotero.zoteroDbPath`       | Path to Zotero database         | `~/Zotero/zotero.sqlite`        |
-| `document-viewer.zotero.betterBibtexDbPath` | Path to Better BibTeX database  | `~/Zotero/better-bibtex.sqlite` |
+| `document-viewer.zotero.betterBibtexDbPath` | Legacy Better BibTeX database (older versions only) | `~/Zotero/better-bibtex.sqlite` |
 | `document-viewer.pandoc.enabled`            | Enable Pandoc export            | `true`                          |
 | `document-viewer.pandoc.path`               | Custom Pandoc path              | (auto-detect)                     |
 | `document-viewer.pandoc.cslStyle`           | Citation style or path to .csl  | `apa`                           |
@@ -171,7 +172,7 @@ Or use "Open With..." to choose an editor per file.
 - Ensure [Zotero](https://www.zotero.org/) is installed and has been opened at least once
 - Install the [Better BibTeX](https://retorque.re/zotero-better-bibtex/) plugin in Zotero
 - Run the `Markdown Editor: Detect Zotero Installation` command to verify detection
-- If auto-detection fails, set `document-viewer.zotero.zoteroDbPath` and `document-viewer.zotero.betterBibtexDbPath` manually
+- If auto-detection fails, set `document-viewer.zotero.zoteroDbPath` manually (plus `document-viewer.zotero.betterBibtexDbPath` for older Better BibTeX versions that still keep `better-bibtex.sqlite`)
 - If Zotero is running, the database may be slightly stale — use `Markdown Editor: Refresh Zotero Library` to reload
 
 **Pandoc export fails:**
@@ -196,10 +197,10 @@ Or use "Open With..." to choose an editor per file.
 git clone https://github.com/lricher7329/visual-markdown-editor.git
 cd visual-markdown-editor
 yarn install
-yarn dev          # Start Vite dev server (port 5739)
+yarn dev          # Rebuild the extension on change
 ```
 
-Press `F5` in VS Code to launch the Extension Development Host. The webview connects to the Vite dev server for hot reload during development.
+Press `F5` in VS Code to launch the Extension Development Host. Reload the window to pick up rebuilt code; the editor UI in `resource/vditor/` is loaded as-is.
 
 ```bash
 yarn build        # Production build

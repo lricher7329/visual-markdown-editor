@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-yarn build          # Production build (extension + React webview)
-yarn dev            # Start Vite dev server for webview (port 5739)
+yarn build          # Production build (esbuild via build.js)
+yarn dev            # Rebuild the extension on change (esbuild watch)
+yarn test           # Run unit tests (vitest)
 yarn lint:fix       # Fix ESLint issues
 yarn package        # Create .vsix package
 ```
@@ -19,9 +20,11 @@ This is a VS Code extension that provides a WYSIWYG markdown editor using [Vdito
 
 ### Build Pipeline
 
-The build runs two parallel processes via `vite.config.ts`:
-1. **Extension bundle** (esbuild via `build.js`) - compiles `src/extension.ts` to `out/extension.js`
-2. **React webview** (Vite) - compiles `src/react/main.tsx` to `out/webview/`
+`build.js` runs esbuild directly:
+1. **Extension bundle** - compiles `src/extension.ts` to `out/extension.js`, copying the PDF templates and the sql.js WASM file into `out/`
+2. **Runtime libraries** - bundles each package listed in `dependencies` at the top of `build.js` into `out/node_modules/<name>.js`; these stay external to the extension bundle and are loaded with `require()` at runtime
+
+The webview UI is static: `resource/vditor/` is loaded as-is, with no build step.
 
 ### Extension ↔ Webview Communication
 
@@ -45,6 +48,21 @@ Key events: `init`, `open`, `save`, `doSave`, `update`, `export`, `theme`, `scro
 | `src/service/zotero/` | Zotero citation integration (see below) |
 | `src/common/handler.ts` | Webview ↔ Extension message bus |
 | `resource/vditor/` | Vditor editor HTML/JS/CSS (loaded into webview) |
+
+### Vendored Vditor
+
+`resource/vditor/` is a static copy of the editor. Vditor loads every renderer from its `cdn` option, which `index.js` points at `resource/vditor` itself, so the editor makes no network requests.
+
+| Path | Source |
+|------|--------|
+| `vditor.js`, `vditor.css`, `lute.min.js` | Custom build of the `vscode-vditor` 3.8.19 fork (`VDITOR_VERSION` 3.8.19); not identical to the published package. Local patch in `vditor.js`: Mermaid `securityLevel:"strict"` (was `"loose"`); re-apply it after replacing the file |
+| `dist/js/{i18n,icons,katex}` | `vscode-vditor@3.8.19` (KaTeX fonts trimmed to woff2) |
+| `dist/js/{highlight.js,graphviz,echarts,abcjs,flowchart.js,plantuml}` | `vscode-vditor@3.8.19` npm package |
+| `dist/js/mermaid/mermaid.min.js` | `vditor@3.11.2` npm package (Mermaid 11.6.0) |
+
+`index.html` sets a Content-Security-Policy (scripts only from the extension; `{{cspSource}}` is filled in by the provider), and the webview can only read the extension's `resource/`, the document's folder and the workspace, plus the whole disk when `document-viewer.viewAbsoluteLocal` is on.
+
+When updating any of these, take renderer files from the package version that matches `vditor.js`: file names differ between Vditor releases (3.8 loads `highlight.js/highlight.pack.js` and `styles/<name>.css`; 3.11 ships `highlight.min.js` and `styles/<name>.min.css`).
 
 ### Zotero Integration
 

@@ -40,6 +40,8 @@ export class ZoteroService {
     // Caching
     private cachedItems: ZoteroItem[] | null = null;
     private cacheTimestamp: number = 0;
+    // Modification times of the database files when they were loaded
+    private loadedSignature: string = '';
 
     private constructor(options: ZoteroDatabaseOptions) {
         this.options = options;
@@ -110,22 +112,12 @@ export class ZoteroService {
             zoteroLogger.info('Auto-detection enabled, searching for Zotero...');
             const detected = await detectZoteroPaths();
 
-            if (detected.zoteroDbPath && detected.betterBibtexDbPath) {
+            if (detected.zoteroDbPath) {
                 zoteroLogger.info(`Zotero found at: ${detected.dataDir} (source: ${detected.source})`);
                 options = {
                     zoteroDbPath: detected.zoteroDbPath,
-                    betterBibtexDbPath: detected.betterBibtexDbPath,
-                    linkedAttachmentsBasePath: linkedAttachmentsBasePath ? expandPath(linkedAttachmentsBasePath) : undefined
-                };
-            } else if (detected.zoteroDbPath) {
-                // Zotero found but BBT missing - show warning
-                zoteroLogger.warn(detected.error || 'Better BibTeX not found');
-                vscode.window.showWarningMessage(
-                    detected.error || 'Better BibTeX not found. Citation keys require the Better BibTeX plugin.'
-                );
-                options = {
-                    zoteroDbPath: detected.zoteroDbPath,
-                    betterBibtexDbPath: expandPath(config.get('zotero.betterBibtexDbPath', '~/Zotero/better-bibtex.sqlite')),
+                    // Absent with current Better BibTeX, which stores keys in Zotero's citationKey field
+                    betterBibtexDbPath: detected.betterBibtexDbPath ?? undefined,
                     linkedAttachmentsBasePath: linkedAttachmentsBasePath ? expandPath(linkedAttachmentsBasePath) : undefined
                 };
             } else {
@@ -229,14 +221,15 @@ export class ZoteroService {
         zoteroLogger.setStatus({ status: 'connecting', message: 'Connecting to databases...' });
 
         try {
-            // Check if files exist and get their sizes
+            // Check if files exist and get their sizes. The Better BibTeX database is optional.
+            const bbtPath = this.options.betterBibtexDbPath;
             const [zoteroStat, bbtStat] = await Promise.all([
                 fs.stat(this.options.zoteroDbPath),
-                fs.stat(this.options.betterBibtexDbPath)
+                bbtPath ? fs.stat(bbtPath).catch(() => null) : null
             ]);
 
             // Warn if databases are large relative to available memory
-            const totalDbSize = zoteroStat.size + bbtStat.size;
+            const totalDbSize = zoteroStat.size + (bbtStat?.size ?? 0);
             const LARGE_DB_THRESHOLD = 100 * 1024 * 1024; // 100 MB
             if (totalDbSize > LARGE_DB_THRESHOLD) {
                 const freeMemory = os.freemem();
@@ -271,11 +264,15 @@ export class ZoteroService {
             const SQL = await initSqlJs({
                 locateFile: (file: string) => wasmPath || file
             });
+            this.loadedSignature = await this.databaseSignature();
             const zoteroDbFile = await fs.readFile(this.options.zoteroDbPath);
-            const bbtDbFile = await fs.readFile(this.options.betterBibtexDbPath);
-
             this.db = new SQL.Database(zoteroDbFile);
-            this.bbt = new SQL.Database(bbtDbFile);
+
+            if (bbtPath && bbtStat) {
+                this.bbt = new SQL.Database(await fs.readFile(bbtPath));
+            } else {
+                zoteroLogger.info('No Better BibTeX database found; using citation keys stored in Zotero');
+            }
 
             // Load library information
             await this.loadLibraries();
@@ -341,10 +338,24 @@ export class ZoteroService {
      * Connect if not already connected
      */
     public async connectIfNeeded(): Promise<boolean> {
-        if (!this.db || !this.bbt) {
+        if (!this.db) {
             return await this.connect();
         }
+        // The databases are in-memory copies, so reload when Zotero has written to them
+        if (await this.databaseSignature() !== this.loadedSignature) {
+            zoteroLogger.info('Zotero database changed on disk, reloading');
+            return await this.refresh();
+        }
         return true;
+    }
+
+    /**
+     * Modification times of the database files, used to detect changes
+     */
+    private async databaseSignature(): Promise<string> {
+        const paths = [this.options.zoteroDbPath, this.options.betterBibtexDbPath];
+        const mtimes = await Promise.all(paths.map(p => p ? fs.stat(p).then(s => s.mtimeMs, () => 0) : 0));
+        return mtimes.join(':');
     }
 
     /**
@@ -352,7 +363,7 @@ export class ZoteroService {
      * @param filter Optional library filter
      */
     public async getItems(filter?: LibraryFilter, bypassCache: boolean = false): Promise<ZoteroItem[]> {
-        if (!this.db || !this.bbt) {
+        if (!this.db) {
             zoteroLogger.error('Attempted to get items but database not connected');
             vscode.window.showErrorMessage('Zotero database not connected');
             return [];
@@ -375,7 +386,7 @@ export class ZoteroService {
         try {
             // Execute queries
             const [sqlBbt, sqlItems, sqlCreators, sqlTags, sqlCollections] = [
-                this.bbt.exec(queryBbt),
+                this.bbt ? this.bbt.exec(queryBbt) : [],
                 this.db.exec(queryItems),
                 this.db.exec(queryCreators),
                 this.db.exec(queryTags),
@@ -465,6 +476,9 @@ export class ZoteroService {
                         case 'ISSN':
                             rawItems[zoteroKey].issn = value;
                             break;
+                        case 'citationKey':
+                            rawItems[zoteroKey].citeKey = value;
+                            break;
                     }
                     rawItems[zoteroKey].itemType = row[typeNameIndex] as string;
                     rawItems[zoteroKey].libraryID = row[libraryIdIndex] as number;
@@ -527,7 +541,8 @@ export class ZoteroService {
             // Build final items array with citeKeys, applying library filter
             const items: ZoteroItem[] = [];
             for (const [zoteroKey, item] of Object.entries(rawItems)) {
-                const citeKey = bbtCitekeys[zoteroKey];
+                // A legacy Better BibTeX database, when present, takes precedence
+                const citeKey = bbtCitekeys[zoteroKey] || item.citeKey;
                 if (citeKey && item.title) {
                     // Apply library filter
                     if (filter !== 'all' && item.libraryID) {
@@ -705,7 +720,7 @@ export class ZoteroService {
      * Check if connected to databases
      */
     public isConnected(): boolean {
-        return this.db !== null && this.bbt !== null;
+        return this.db !== null;
     }
 
     /**

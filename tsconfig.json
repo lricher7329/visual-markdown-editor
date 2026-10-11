@@ -22,10 +22,7 @@
 		"skipLibCheck": true
 	},
 	"exclude": [
-		"src/react",
 		"node_modules",
-		".vscode-test",
-		"build.ts",
-		"vite.config.ts"
+		".vscode-test"
 	]
 }
