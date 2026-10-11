@@ -100,6 +100,7 @@ Markdown is a powerful approach to documentation that treats writing as code. Yo
 | Switch to VS Code editor | `Ctrl+Alt+E`   | `Ctrl+Cmd+E`  |
 | Save                     | `Ctrl+S`       | `Cmd+S`       |
 | Paste plain text         | `Ctrl+Shift+V` | `Cmd+Shift+V` |
+| Insert Zotero citation   | `Shift+Alt+Z`  | `Shift+Option+Z` |
 
 ## Toolbar
 

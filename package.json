@@ -102,7 +102,7 @@
 				"command": "document-viewer.markdown.paste",
 				"key": "ctrl+v",
 				"mac": "cmd+v",
-				"when": "!terminalFocus && !filesExplorerFocus && (resourceLangId == markdown || resourceLangId == quarto)"
+				"when": "(editorTextFocus || activeCustomEditorId =~ /^document-viewer\\.markdownEditor/ && !sideBarFocus && !panelFocus && !auxiliaryBarFocus && !inQuickOpen && !webviewFindWidgetFocused) && (resourceLangId == markdown || resourceLangId == quarto)"
 			},
 			{
 				"command": "document-viewer.markdown.switch",
@@ -112,21 +112,20 @@
 			},
 			{
 				"command": "document-viewer.zotero.insertCitation",
-				"key": "ctrl+shift+z",
-				"mac": "cmd+shift+z",
-				"when": "activeCustomEditorId == 'document-viewer.markdownEditor'"
+				"key": "shift+alt+z",
+				"when": "activeCustomEditorId =~ /^document-viewer\\.markdownEditor/"
 			}
 		],
 		"menus": {
 			"editor/title": [
 				{
 					"command": "document-viewer.markdown.switch",
-					"when": "resourceExtname == '.md' || resourceExtname == '.qmd'",
+					"when": "resourceExtname == '.md' || resourceExtname == '.markdown' || resourceExtname == '.qmd'",
 					"group": "navigation@-2"
 				},
 				{
 					"command": "document-viewer.export",
-					"when": "activeCustomEditorId == 'document-viewer.markdownEditor'",
+					"when": "activeCustomEditorId =~ /^document-viewer\\.markdownEditor/",
 					"group": "navigation@-1"
 				}
 			],
