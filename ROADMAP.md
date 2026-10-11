@@ -22,13 +22,14 @@ Branch: `master`
   - `⇧⌥Z` opens the citation picker, `⌘⇧Z` redoes, and `⌘V` pastes normally in the Search box
   - Insert Citation loads the Zotero library; PDF export works, and so does Pandoc export of a file whose path has spaces
   - a `.qmd` file shows the Export button
+  - in the citation picker, checked items stay checked while typing, and recently used citations appear first
   - "Open in Typora" on Windows
 - [ ] 2.2 — Remaining audit findings (7 advisories in 5 packages on 2026-10-11):
   - `katex` 0.16 (low; prototype pollution can bypass `trust`; fixed in 0.18.2): upgrade, and check that export math still matches the vendored KaTeX CSS
   - `basic-ftp` (high; fixed in 6.2.1) and `extract-zip` (high; no fix released) via `puppeteer-core` → `@puppeteer/browsers`: browser-download code the extension never runs. Try overriding `basic-ftp`; wait for upstream on `extract-zip`
   - `image-size` (high; fixed in 2.0.3) via `vscode-html-to-docx` 1.1.3, the latest, which requires `image-size` ^1 (v2 changed its API): override and test, or route DOCX export through Pandoc
   - `braces` (high; no fix released) via `esbuild-plugin-copy` 1.x: dev-only, and only matches globs in `build.js`. `esbuild-plugin-copy` 2.x still depends on it
-- [ ] 2.3 — Citation picker:
+- [x] 2.3 — Citation picker (done 2026-10-11; usage history is saved in `globalState`, the boost applies only to relevance order, and picks are reused so checkmarks survive typing):
   - Recently used citations never rise to the top: each picker builds a new `ZoteroSearchService` (`markdownEditorProvider.ts`), so recorded usage is discarded, and nothing saves it between sessions
   - Once usage history works, decide whether it should override an explicit title/author/year sort (`applyUsageBoost` re-sorts after `sortResults`)
   - Typing replaces `quickPick.items`, which likely clears multi-select checkmarks; confirm in VS Code

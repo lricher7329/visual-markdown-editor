@@ -48,6 +48,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     private static _activeDocument: vscode.TextDocument | null = null;
     private static _activeHandler: Handler | null = null;
 
+    /** Shared across pickers so citation usage history survives; backed by globalState once constructed */
+    private static searchService = new ZoteroSearchService();
+
     public static get activeDocument(): vscode.TextDocument | null {
         return this._activeDocument;
     }
@@ -85,8 +88,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                 return;
             }
 
-            // Initialize search service with items
-            const searchService = new ZoteroSearchService();
+            // Refresh the shared search index (keeps usage history)
+            const searchService = this.searchService;
             searchService.updateIndex(items);
 
             // Create custom QuickPick for multi-select and preview
@@ -100,22 +103,30 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             const sortOptions: SortOption[] = ['relevance', 'dateAdded', 'dateModified', 'year', 'title', 'author'];
             let currentSort: SortOption = 'relevance';
 
-            const formatItem = (item: ZoteroItem) => ({
-                label: `${formatTypes(item.itemType)} ${formatAuthors(item.creators)} (${item.year || 'n.d.'})`,
-                description: `@${item.citeKey}`,
-                detail: item.title + (item.publicationTitle ? ` — ${item.publicationTitle}` : ''),
-                alwaysShow: true,
-                item
-            });
+            // One pick object per item: the QuickPick tracks checkmarks by reference,
+            // so new objects on every keystroke would clear the multi-selection
+            const picks = new Map<string, vscode.QuickPickItem & { item: ZoteroItem }>();
+            const toPick = (item: ZoteroItem) => {
+                let pick = picks.get(item.citeKey);
+                if (!pick) {
+                    pick = {
+                        label: `${formatTypes(item.itemType)} ${formatAuthors(item.creators)} (${item.year || 'n.d.'})`,
+                        description: `@${item.citeKey}`,
+                        detail: item.title + (item.publicationTitle ? ` — ${item.publicationTitle}` : ''),
+                        alwaysShow: true,
+                        item
+                    };
+                    picks.set(item.citeKey, pick);
+                }
+                return pick;
+            };
 
             const updateItems = (query: string) => {
-                if (query.trim()) {
-                    const results = searchService.search(query, currentSort, 100);
-                    quickPick.items = results.map(r => formatItem(r.item));
-                } else {
-                    const results = searchService.search('', currentSort, 100);
-                    quickPick.items = results.map(r => formatItem(r.item));
-                }
+                const selected = quickPick.selectedItems;
+                const results = searchService.search(query, currentSort, 100).map(r => toPick(r.item));
+                // Keep checked items listed even when the new query doesn't match them
+                quickPick.items = [...selected.filter(pick => !results.includes(pick)), ...results];
+                quickPick.selectedItems = selected;
             };
 
             updateItems('');
@@ -336,6 +347,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         this.countStatus.command = 'document-viewer.cycleCountMode';
         this.countStatus.tooltip = 'Click to cycle: Characters → Words → Lines → Pages';
         this.state = context.globalState;
+        MarkdownEditorProvider.searchService = new ZoteroSearchService(context.globalState);
 
         // Set extension path for Zotero service to locate WASM file
         ZoteroService.setExtensionPath(context.extensionPath);

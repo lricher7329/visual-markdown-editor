@@ -23,10 +23,26 @@ export interface SearchResult {
 
 export type SortOption = 'relevance' | 'dateAdded' | 'dateModified' | 'year' | 'title' | 'author';
 
+/** Keeps usage history between sessions; vscode.Memento (e.g. globalState) fits */
+export interface UsageStore {
+    get<T>(key: string): T | undefined;
+    update(key: string, value: unknown): PromiseLike<void> | void;
+}
+
+const USAGE_KEY = 'zotero.citationUsage';
+const MAX_SAVED_USAGE = 200;
+
 export class ZoteroSearchService {
     private fuse: Fuse<ZoteroItem> | null = null;
     private items: ZoteroItem[] = [];
     private usageHistory: Map<string, { count: number; lastUsed: Date }> = new Map();
+
+    constructor(private readonly store?: UsageStore) {
+        const saved = store?.get<Record<string, { count: number; lastUsed: number }>>(USAGE_KEY) ?? {};
+        for (const [citeKey, usage] of Object.entries(saved)) {
+            this.usageHistory.set(citeKey, { count: usage.count, lastUsed: new Date(usage.lastUsed) });
+        }
+    }
 
     private static readonly FUSE_OPTIONS: IFuseOptions<ZoteroItem> = {
         keys: [
@@ -192,8 +208,10 @@ export class ZoteroSearchService {
         // Apply sorting
         results = this.sortResults(results, sortBy);
 
-        // Apply usage boost (recently/frequently used items get priority)
-        results = this.applyUsageBoost(results);
+        // Recently/frequently used items rise to the top, unless the user picked a sort order
+        if (sortBy === 'relevance') {
+            results = this.applyUsageBoost(results);
+        }
 
         // Apply limit
         if (limit && limit > 0) {
@@ -299,6 +317,19 @@ export class ZoteroSearchService {
         } else {
             this.usageHistory.set(citeKey, { count: 1, lastUsed: new Date() });
         }
+        this.saveUsage();
+    }
+
+    private saveUsage(): void {
+        if (!this.store) return;
+        const recent = [...this.usageHistory.entries()]
+            .sort(([, a], [, b]) => b.lastUsed.getTime() - a.lastUsed.getTime())
+            .slice(0, MAX_SAVED_USAGE);
+        const data: Record<string, { count: number; lastUsed: number }> = {};
+        for (const [citeKey, usage] of recent) {
+            data[citeKey] = { count: usage.count, lastUsed: usage.lastUsed.getTime() };
+        }
+        void this.store.update(USAGE_KEY, data);
     }
 
     /**

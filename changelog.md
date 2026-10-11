@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Citation picker: recently used citations rise to the top of the default list and are remembered between sessions. Usage history was discarded every time the picker opened.
+- Citation picker: a chosen sort order (title, author, year, date) is no longer replaced by relevance order while you type a search.
+- Citation picker: citations you have checked stay checked and listed while you keep typing.
 - `document-viewer.zotero.showStatusBar` now hides the Zotero status bar item; it was ignored.
 - `document-viewer.editorTheme` accepts all ten editor themes. VS Code flagged seven of the theme picker's choices as invalid values.
 
