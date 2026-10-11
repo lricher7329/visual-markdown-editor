@@ -8,16 +8,16 @@
 
 - **Tier:** C — Direct (an `extensions/*` repo: land on `master`, no PRs; the publish workflow runs on `v*` tags)
 - **Local check:** `yarn lint:fix && yarn typecheck && yarn test && yarn build && yarn package` (what CI runs)
-- **Active milestone:** M2 — Leftover cleanup
+- **Active milestone:** none — between milestones
 - **Branch:** `master`
-- **Next step:** phase 2.1, the manual check in VS Code/Positron (checklist under M2); M2's code changes shipped in 2.6.0
+- **Next step:** no milestone planned yet; pick one from the candidates under M2's known limitations (decision needed)
 - **Updated:** 2026-10-11
 
 ## Milestones
 
-### M2 — Leftover cleanup  `[~] in progress`
-Branch: `master`
-- [ ] 2.1 — Check 2.5.0 inside VS Code; these couldn't be tested outside it:
+### M2 — Leftover cleanup  `[x] complete`
+Branch: `master` · Landed: 2026-10-11 · Released in v2.6.0
+- [x] 2.1 — Check the release inside the editor (passed in Positron with 2.6.0 on 2026-10-11; image display was covered by Insert Image and drag-and-drop):
   - the editor renders under the new CSP, and images in the document's folder still show
   - `⇧⌥Z` opens the citation picker, `⌘⇧Z` redoes, and `⌘V` pastes normally in the Search box
   - Insert Citation loads the Zotero library; PDF export works, and so does Pandoc export of a file whose path has spaces
@@ -66,6 +66,7 @@ Branch: `milestone/modernize-and-harden` · Merged: 2026-10-11 · Released as v2
 
 ## Changelog
 
+- 2026-10-11 — M2 complete: the manual checks (2.1) passed in Positron.
 - 2026-10-11 — Released v2.6.0 with M2 phases 2.2–2.6.
 - 2026-10-11 — M2 phases 2.2–2.6 complete on `master` (audit findings, citation picker, settings, dead code, CI typecheck); 2.1 awaits a manual check.
 - 2026-10-11 — M1 complete: merged `milestone/modernize-and-harden` into `master` and released v2.5.0. Roadmap created; M2 lists the leftovers.
