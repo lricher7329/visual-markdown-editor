@@ -196,10 +196,10 @@ Or use "Open With..." to choose an editor per file.
 git clone https://github.com/lricher7329/visual-markdown-editor.git
 cd visual-markdown-editor
 yarn install
-yarn dev          # Start Vite dev server (port 5739)
+yarn dev          # Rebuild the extension on change
 ```
 
-Press `F5` in VS Code to launch the Extension Development Host. The webview connects to the Vite dev server for hot reload during development.
+Press `F5` in VS Code to launch the Extension Development Host. Reload the window to pick up rebuilt code; the editor UI in `resource/vditor/` is loaded as-is.
 
 ```bash
 yarn build        # Production build

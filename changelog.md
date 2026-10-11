@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The editor webview can only ask the extension to run the one command it uses, instead of any VS Code command.
 
 ### Changed
+- Removed the unused React webview along with React, antd and Vite; `yarn build` and `yarn dev` run the esbuild script (`build.js`) directly.
 - Removed unused dependencies (`axios`, `iconv-lite`, `date-format`) and `markdown-it-mermaid`; extension bundle shrinks from ~1.1 MB to ~0.4 MB.
 - Refreshed dependencies within their semver ranges and upgraded `vitest` to 4 and `esbuild` to 0.28, clearing all critical and most high-severity audit findings.
 - CI and publish workflows now run on Node 24 (Node 20 is end-of-life).

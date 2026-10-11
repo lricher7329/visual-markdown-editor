@@ -41,7 +41,7 @@ async function main() {
             }),
             {
                 name: 'build notice',
-                setup(build: any) {
+                setup(build) {
                     build.onStart(() => {
                         console.log('build start')
                     })
@@ -69,8 +69,8 @@ function createLib() {
             point[dependency] = mainAbsPath;
         }
         return point;
-    }, {} as Record<string, string>)
-    build({
+    }, {})
+    return build({
         entryPoints: points,
         bundle: true,
         outdir: "out/node_modules",
@@ -82,5 +82,5 @@ function createLib() {
     })
 }
 
-createLib();
-main();
+// Exit non-zero on failure (esbuild has already printed the errors)
+Promise.all([createLib(), main()]).catch(() => process.exit(1));

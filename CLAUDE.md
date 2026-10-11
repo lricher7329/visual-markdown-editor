@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-yarn build          # Production build (extension + React webview)
-yarn dev            # Start Vite dev server for webview (port 5739)
+yarn build          # Production build (esbuild via build.js)
+yarn dev            # Rebuild the extension on change (esbuild watch)
+yarn test           # Run unit tests (vitest)
 yarn lint:fix       # Fix ESLint issues
 yarn package        # Create .vsix package
 ```
@@ -19,9 +20,11 @@ This is a VS Code extension that provides a WYSIWYG markdown editor using [Vdito
 
 ### Build Pipeline
 
-The build runs two parallel processes via `vite.config.ts`:
-1. **Extension bundle** (esbuild via `build.js`) - compiles `src/extension.ts` to `out/extension.js`
-2. **React webview** (Vite) - compiles `src/react/main.tsx` to `out/webview/`
+`build.js` runs esbuild directly:
+1. **Extension bundle** - compiles `src/extension.ts` to `out/extension.js`, copying the PDF templates and the sql.js WASM file into `out/`
+2. **Runtime libraries** - bundles each package listed in `dependencies` at the top of `build.js` into `out/node_modules/<name>.js`; these stay external to the extension bundle and are loaded with `require()` at runtime
+
+The webview UI is static: `resource/vditor/` is loaded as-is, with no build step.
 
 ### Extension ↔ Webview Communication
 
