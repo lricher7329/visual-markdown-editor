@@ -1,6 +1,6 @@
 import { adjustImgPath, getWorkspacePath } from '@/common/fileUtil';
-import { mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { basename, dirname, isAbsolute, parse, resolve, relative } from 'path';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { basename, dirname, isAbsolute, join, parse, resolve, relative } from 'path';
 import * as vscode from 'vscode';
 import { Handler } from '../common/handler';
 import { Util } from '../common/util';
@@ -22,6 +22,12 @@ const COUNT_MODES: CountMode[] = ['characters', 'words', 'lines', 'pages'];
 
 /** Commands the webview may ask the extension to run (see resource/vditor/util.js) */
 const WEBVIEW_COMMANDS = ['document-viewer.markdown.paste'];
+
+/** Link schemes that open without confirmation; links come from the rendered document */
+const EXTERNAL_LINK_SCHEMES = ['http', 'https', 'mailto', 'zotero'];
+
+/** Webview URIs for local files (see Webview.asWebviewUri) */
+const LOCAL_RESOURCE_PREFIX = /^https:\/\/file\+\.vscode-resource\.vscode-cdn\.net/i;
 
 /**
  * Custom text editor provider for markdown files.
@@ -350,6 +356,29 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         return data;
     }
 
+    /**
+     * Folders the webview may load files from: the extension's resources, the
+     * document's folder and the workspace. Absolute image paths need the whole disk.
+     */
+    private getResourceRoots(folderPath: vscode.Uri): vscode.Uri[] {
+        const roots = [
+            vscode.Uri.file(join(this.extensionPath, 'resource')),
+            folderPath,
+            ...(vscode.workspace.workspaceFolders ?? []).map(folder => folder.uri),
+        ];
+        if (Global.getConfig<boolean>(ConfigKeys.viewAbsoluteLocal)) {
+            roots.push(vscode.Uri.file('/'), ...this.getFolders());
+        }
+        return roots;
+    }
+
+    private isInResourceRoots(filePath: string, folderPath: vscode.Uri): boolean {
+        return this.getResourceRoots(folderPath).some(root => {
+            const rel = relative(root.fsPath, filePath);
+            return !rel.startsWith('..') && !isAbsolute(rel);
+        });
+    }
+
     resolveCustomTextEditor(
         document: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
@@ -360,7 +389,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         const folderPath = vscode.Uri.joinPath(uri, '..');
         webview.options = {
             enableScripts: true,
-            localResourceRoots: [vscode.Uri.file("/"), ...this.getFolders()]
+            localResourceRoots: this.getResourceRoots(folderPath)
         };
         const handler = Handler.bind(webviewPanel, uri);
         this.handleMarkdown(document, handler, folderPath);
@@ -425,14 +454,19 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             if (WEBVIEW_COMMANDS.includes(command)) {
                 vscode.commands.executeCommand(command);
             }
-        }).on("openLink", (uriString) => {
-            const resReg = /https:\/\/file.*\.net/i;
-            if (uriString.match(resReg)) {
-                const localPath = uriString.replace(resReg, '');
+        }).on("openLink", async (uriString) => {
+            if (LOCAL_RESOURCE_PREFIX.test(uriString)) {
+                const localPath = uriString.replace(LOCAL_RESOURCE_PREFIX, '');
                 vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(localPath));
-            } else {
-                vscode.env.openExternal(vscode.Uri.parse(uriString));
+                return;
             }
+            const target = vscode.Uri.parse(uriString);
+            if (!EXTERNAL_LINK_SCHEMES.includes(target.scheme)) {
+                const choice = await vscode.window.showWarningMessage(
+                    `Open this ${target.scheme}: link?`, { modal: true, detail: uriString }, 'Open');
+                if (choice !== 'Open') return;
+            }
+            vscode.env.openExternal(target);
         }).on("scroll", ({ scrollTop }) => {
             this.state.update(`scrollTop_${document.uri.fsPath}`, scrollTop);
         }).on("img", async (img) => {
@@ -456,8 +490,17 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                 title: 'Select Image'
             });
             if (result && result[0]) {
-                const imagePath = result[0].fsPath;
+                let imagePath = result[0].fsPath;
                 const docDir = resolve(uri.fsPath, "..");
+                if (!this.isInResourceRoots(imagePath, folderPath)) {
+                    const choice = await vscode.window.showWarningMessage(
+                        `${basename(imagePath)} is outside this document's folder and workspace, so the editor can't display it. Copy it into the document's image folder?`,
+                        'Copy', 'Insert Anyway');
+                    if (!choice) return;
+                    if (choice === 'Copy') {
+                        imagePath = this.copyIntoImageFolder(imagePath, uri);
+                    }
+                }
                 // Calculate relative path from document to image
                 const relativePath = relative(docDir, imagePath).replace(/\\/g, "/");
                 const fileName = parse(imagePath).name;
@@ -551,11 +594,28 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         webview.html = Util.buildPath(
             readFileSync(`${this.extensionPath}/resource/vditor/index.html`, 'utf8')
                 .replace("{{rootPath}}", rootPath)
+                .replace(/{{cspSource}}/g, webview.cspSource)
                 .replace("{{baseUrl}}", baseUrl)
                 .replace(`{{configs}}`, JSON.stringify({
                     platform: platform()
                 })),
             webview, contextPath);
+    }
+
+    /**
+     * Copy an image into the folder pasted images go to (document-viewer.pasterImgPath)
+     */
+    private copyIntoImageFolder(imagePath: string, uri: vscode.Uri): string {
+        const { relPath, fullPath } = adjustImgPath(uri);
+        const pastedPath = isAbsolute(fullPath) ? fullPath : join(resolve(uri.fsPath, ".."), relPath);
+        const { name, ext } = parse(imagePath);
+        let target = join(dirname(pastedPath), `${name}${ext}`);
+        if (existsSync(target)) {
+            target = join(dirname(pastedPath), `${name}-${Date.now()}${ext}`);
+        }
+        mkdirSync(dirname(target), { recursive: true });
+        copyFileSync(imagePath, target);
+        return target;
     }
 
     private updateCount(content: string): void {

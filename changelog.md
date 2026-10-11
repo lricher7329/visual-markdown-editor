@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Export failures now show an error message instead of failing silently (or reporting success), and the headless browser is always closed.
 
 ### Security
+- The editor webview now has a Content Security Policy: only the extension's own scripts run, so inline script injection (for example `onerror=` attributes or `javascript:` links) is blocked.
+- The editor can only read files in the extension, the document's folder and the workspace. Turning on `document-viewer.viewAbsoluteLocal` restores access to the whole disk for absolute image paths. Insert Image offers to copy a picture from elsewhere into the document's image folder.
+- Links other than `http`, `https`, `mailto` and `zotero` ask before opening.
+- Mermaid diagrams render in strict mode (no HTML labels beyond line breaks, no click handlers).
 - The editor webview can only ask the extension to run the one command it uses, instead of any VS Code command.
 
 ### Changed
