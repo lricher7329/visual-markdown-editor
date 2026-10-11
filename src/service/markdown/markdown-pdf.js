@@ -8,8 +8,8 @@ const markdownItKatex = require("./ext/markdown-it-katex")
 const markdownItPlantuml = require("markdown-it-plantuml")
 const markdownItToc = require("markdown-it-toc-done-right")
 const markdownItAnchor = require("markdown-it-anchor")
+const markdownItMermaid = require("./ext/markdown-it-mermaid")
 const { exportByType } = require('./html-export')
-const markdownItMermaid = require('markdown-it-mermaid').default;
 
 async function convertMarkdown(inputMarkdownFile, config) {
 
@@ -24,7 +24,7 @@ async function convertMarkdown(inputMarkdownFile, config) {
   const containsMermaid = $('.mermaid').length > 0;
   if (containsMermaid) {
       const mermaidScript = `
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <script>mermaid.initialize({startOnLoad:true});</script>
     `;
 
@@ -61,7 +61,7 @@ function convertMarkdownToHtml(filename, type, text, config) {
         highlight: function (str, lang) {
           if (lang && hljs.getLanguage(lang)) {
             try {
-              str = hljs.highlight(lang, str, true).value
+              str = hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
             } catch (error) {
               str = md.utils.escapeHtml(str)
 
@@ -98,7 +98,7 @@ function convertMarkdownToHtml(filename, type, text, config) {
       // convert the img src of the html
       md.renderer.rules.html_block = function (tokens, idx) {
         let html = tokens[idx].content
-        let $ = require("cheerio").load(html)
+        let $ = require("cheerio").load(html, null, false)
         $("img").each(function () {
           let src = $(this).attr("src")
           let href = convertImgPath(src, filename)

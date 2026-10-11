@@ -34,6 +34,8 @@ export class MarkdownService {
             vscode.window.showInformationMessage(`Export markdown to ${type} success!`);
         } catch (error) {
             Output.log(error);
+            const message = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Export markdown to ${type} failed: ${message}`);
         }
     }
 
@@ -44,7 +46,8 @@ export class MarkdownService {
             type,
             "styles": [],
             withoutOutline,
-            "executablePath": this.getChromiumPath(),
+            // Only PDF export drives a browser; html/docx must work without one
+            "executablePath": type === 'pdf' ? this.getChromiumPath() : undefined,
             "breaks": false,
             "printBackground": true,
             format: "A4",
@@ -82,9 +85,7 @@ export class MarkdownService {
             Output.debug(`using chrome path is ${chromePath}`);
             return chromePath;
         } catch {
-            const msg = "No Chromium browser found, export failed.";
-            vscode.window.showErrorMessage(msg);
-            throw new Error(msg);
+            throw new Error("No Chromium browser found. Set document-viewer.chromiumPath to a Chrome, Edge or Chromium executable.");
         }
     }
 
@@ -215,7 +216,8 @@ export class MarkdownService {
         if (!uri) {
             uri = editor?.document.uri as vscode.Uri;
         }
-        const type = editor ? 'cweijan.markdownViewer' : 'default';
+        // The optional editor's selector covers .md, .markdown and .qmd
+        const type = editor ? 'document-viewer.markdownEditor.optional' : 'default';
         vscode.commands.executeCommand('vscode.openWith', uri, type);
     }
 
@@ -247,28 +249,30 @@ export class MarkdownService {
             return;
         }
 
-        const platform = process.platform;
+        // Launch directly, not through a terminal: file names may contain shell metacharacters
         let command: string;
-
-        if (platform === 'darwin') {
-            // macOS: use 'open -a' to launch Typora
-            command = `open -a "Typora" "${filePath}"`;
-        } else if (platform === 'win32') {
-            // Windows: use start command with Typora
-            command = `start "" "Typora" "${filePath}"`;
+        let args: string[];
+        if (process.platform === 'darwin') {
+            command = 'open';
+            args = ['-a', 'Typora', filePath];
+        } else if (process.platform === 'win32') {
+            // `start` resolves Typora through its App Paths registration. Windows file
+            // names cannot contain '"', so quoting the path keeps & | < > ^ literal.
+            command = 'cmd.exe';
+            args = ['/d', '/s', '/c', `"start "" typora "${filePath}""`];
         } else {
             // Linux: assume typora is in PATH
-            command = `typora "${filePath}"`;
+            command = 'typora';
+            args = [filePath];
         }
 
-        // Use hidden terminal for reliable cross-platform execution
-        const terminal = vscode.window.createTerminal({
-            name: 'Typora',
-            hideFromUser: true
+        const showFailure = () => vscode.window.showErrorMessage('Could not open Typora. Is it installed?');
+        const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsVerbatimArguments: true });
+        child.on('error', showFailure);
+        // `open` and `start` exit right away; a non-zero code means Typora was not found
+        child.on('exit', code => {
+            if (code && command !== 'typora') showFailure();
         });
-        terminal.sendText(command);
-
-        // Dispose terminal after a short delay
-        setTimeout(() => terminal.dispose(), 2000);
+        child.unref();
     }
 }

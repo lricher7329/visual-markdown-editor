@@ -44,7 +44,8 @@ export interface ZoteroOpenOption {
 
 export interface ZoteroDatabaseOptions {
     zoteroDbPath: string;
-    betterBibtexDbPath: string;
+    /** Legacy Better BibTeX database; newer versions store keys in Zotero's citationKey field */
+    betterBibtexDbPath?: string;
     linkedAttachmentsBasePath?: string;
 }
 

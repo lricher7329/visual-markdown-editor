@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
 			await MarkdownEditorProvider.openCitationPicker();
 		}),
 		vscode.commands.registerCommand('document-viewer.export', async () => {
-			await MarkdownEditorProvider.openExportOptions(context.extensionPath);
+			await MarkdownEditorProvider.openExportOptions(context);
 		}),
 		vscode.window.registerCustomEditorProvider("document-viewer.markdownEditor", markdownEditorProvider, viewOption),
 		vscode.window.registerCustomEditorProvider("document-viewer.markdownEditor.optional", markdownEditorProvider, viewOption),

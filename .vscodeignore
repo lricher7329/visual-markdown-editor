@@ -14,3 +14,12 @@ build.js
 build.ts
 yarn.lock
 backlog.md
+.claude/**
+.github/**
+.cursorrules
+.gitmodules
+CLAUDE.md
+README.md.comments
+lib.js
+index.html
+image/**

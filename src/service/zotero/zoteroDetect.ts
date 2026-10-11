@@ -17,17 +17,17 @@ export interface ZoteroDetectionResult {
 }
 
 /**
- * Get the Zotero profile directory location based on platform
+ * Get the directory holding Zotero's profiles.ini based on platform
  */
-function getZoteroProfilesDir(): string {
+function getZoteroProfileRoot(): string {
     const platform = process.platform;
     const home = os.homedir();
 
     switch (platform) {
         case 'darwin':
-            return path.join(home, 'Library', 'Application Support', 'Zotero', 'Profiles');
+            return path.join(home, 'Library', 'Application Support', 'Zotero');
         case 'win32':
-            return path.join(process.env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'Zotero', 'Zotero', 'Profiles');
+            return path.join(process.env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'Zotero', 'Zotero');
         case 'linux':
         default:
             return path.join(home, '.zotero', 'zotero');
@@ -48,26 +48,26 @@ function getDefaultDataDir(): string {
  * Looks for profiles.ini and finds the default profile
  */
 async function findActiveProfileDir(): Promise<string | null> {
-    const profilesDir = getZoteroProfilesDir();
-    const profilesIniPath = path.join(path.dirname(profilesDir), 'profiles.ini');
+    const profileRoot = getZoteroProfileRoot();
 
     try {
-        const iniContent = await fs.readFile(profilesIniPath, 'utf-8');
+        const iniContent = await fs.readFile(path.join(profileRoot, 'profiles.ini'), 'utf-8');
 
         // Parse profiles.ini to find the default profile
-        // Format: [Profile0] Name=default Path=xxxxxxxx.default Default=1
-        const lines = iniContent.split('\n');
+        // Format: [Profile0] Name=default IsRelative=1 Path=Profiles/xxxxxxxx.default Default=1
         let currentProfile: { path?: string; isRelative?: boolean; isDefault?: boolean } = {};
-        let defaultProfilePath: string | null = null;
+        let defaultProfile: { path: string; isRelative: boolean } | null = null;
+        const saveIfDefault = () => {
+            if (currentProfile.isDefault && currentProfile.path) {
+                defaultProfile = { path: currentProfile.path, isRelative: currentProfile.isRelative !== false };
+            }
+        };
 
-        for (const line of lines) {
+        for (const line of iniContent.split(/\r?\n/)) {
             const trimmed = line.trim();
 
-            if (trimmed.startsWith('[Profile')) {
-                // Save previous profile if it was default
-                if (currentProfile.isDefault && currentProfile.path) {
-                    defaultProfilePath = currentProfile.path;
-                }
+            if (trimmed.startsWith('[')) {
+                saveIfDefault();
                 currentProfile = {};
             } else if (trimmed.startsWith('Path=')) {
                 currentProfile.path = trimmed.substring(5);
@@ -77,40 +77,32 @@ async function findActiveProfileDir(): Promise<string | null> {
                 currentProfile.isDefault = trimmed.substring(8) === '1';
             }
         }
+        saveIfDefault();
 
-        // Check last profile
-        if (currentProfile.isDefault && currentProfile.path) {
-            defaultProfilePath = currentProfile.path;
+        if (defaultProfile) {
+            const { path: profilePath, isRelative } = defaultProfile;
+            // Relative paths are relative to the directory holding profiles.ini
+            return isRelative ? path.join(profileRoot, profilePath) : profilePath;
         }
-
-        if (!defaultProfilePath) {
-            // If no default marked, try to find any profile
-            const entries = await fs.readdir(profilesDir, { withFileTypes: true });
-            const profileDirs = entries.filter(e => e.isDirectory() && e.name.includes('.'));
-            if (profileDirs.length > 0) {
-                return path.join(profilesDir, profileDirs[0].name);
-            }
-            return null;
-        }
-
-        // Resolve the profile path
-        if (currentProfile.isRelative !== false) {
-            return path.join(profilesDir, defaultProfilePath);
-        }
-        return defaultProfilePath;
     } catch {
-        // profiles.ini not found, try to find profile directory directly
-        try {
-            const entries = await fs.readdir(profilesDir, { withFileTypes: true });
-            const profileDirs = entries.filter(e => e.isDirectory() && e.name.includes('.'));
-            if (profileDirs.length > 0) {
-                return path.join(profilesDir, profileDirs[0].name);
-            }
-        } catch {
-            // Profiles directory doesn't exist
-        }
-        return null;
+        // profiles.ini not found
     }
+
+    // No default profile recorded: use the first profile directory found.
+    // Profiles sit in a Profiles/ subfolder on macOS and Windows.
+    const profilesDir = process.platform === 'darwin' || process.platform === 'win32'
+        ? path.join(profileRoot, 'Profiles')
+        : profileRoot;
+    try {
+        const entries = await fs.readdir(profilesDir, { withFileTypes: true });
+        const profileDirs = entries.filter(e => e.isDirectory() && e.name.includes('.'));
+        if (profileDirs.length > 0) {
+            return path.join(profilesDir, profileDirs[0].name);
+        }
+    } catch {
+        // Profiles directory doesn't exist
+    }
+    return null;
 }
 
 /**
@@ -168,8 +160,8 @@ export async function detectZoteroPaths(): Promise<ZoteroDetectionResult> {
         }
     }
 
-    // Step 3: Fall back to default location
-    if (!dataDir) {
+    // Step 3: Fall back to the default location, also when the configured one is stale
+    if (!dataDir || !(await verifyDatabaseFiles(dataDir)).zotero) {
         dataDir = getDefaultDataDir();
         source = 'default';
     }
@@ -193,10 +185,6 @@ export async function detectZoteroPaths(): Promise<ZoteroDetectionResult> {
         betterBibtexDbPath: bbt ? path.join(dataDir, 'better-bibtex.sqlite') : null,
         source
     };
-
-    if (!bbt) {
-        result.error = 'Better BibTeX database not found. Citation keys require the Better BibTeX plugin.';
-    }
 
     return result;
 }

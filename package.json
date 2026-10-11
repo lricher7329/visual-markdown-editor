@@ -313,7 +313,7 @@
 				"document-viewer.zotero.betterBibtexDbPath": {
 					"type": "string",
 					"default": "~/Zotero/better-bibtex.sqlite",
-					"description": "Path to Better BibTeX database file (only used when autoDetect is disabled)."
+					"description": "Optional path to a legacy Better BibTeX database (only used when autoDetect is disabled). Current Better BibTeX versions store citation keys in Zotero's own database, so this file is only needed for older versions."
 				},
 				"document-viewer.zotero.linkedAttachmentsBasePath": {
 					"type": "string",
@@ -367,7 +367,7 @@
 	},
 	"scripts": {
 		"dev": "vite --mode=development",
-		"lint:fix": "eslint src/**/*.ts --fix",
+		"lint:fix": "eslint 'src/**/*.ts' --fix",
 		"build": "rm -rf out && vite build --mode=production",
 		"test": "vitest run",
 		"test:watch": "vitest",
@@ -383,7 +383,7 @@
 		"@typescript-eslint/eslint-plugin": "^7.1.1",
 		"@typescript-eslint/parser": "^7.1.1",
 		"@vitejs/plugin-react": "^4.2.1",
-		"esbuild": "^0.24.0",
+		"esbuild": "^0.28.2",
 		"esbuild-plugin-copy": "^1.3.0",
 		"eslint": "^8.57.0",
 		"eslint-plugin-import": "^2.29.1",
@@ -394,24 +394,23 @@
 		"less": "^4.2.0",
 		"typescript": "^5.9.3",
 		"vite": "^6.2.5",
-		"vitest": "^2.0.0"
+		"vitest": "^4.1.11"
+	},
+	"resolutions": {
+		"vitest/vite": "^6.4.4"
 	},
 	"dependencies": {
 		"@ant-design/icons": "^5.3.5",
 		"antd": "^5.15.4",
-		"axios": "^1.4.0",
 		"cheerio": "^1.0.0",
 		"chrome-finder": "^1.0.7",
-		"date-format": "^4.0.14",
 		"file-type": "^19.6.0",
 		"fuse.js": "^7.1.0",
 		"highlight.js": "^11.10.0",
-		"iconv-lite": "^0.6.3",
 		"katex": "^0.16.2",
 		"markdown-it": "^14.1.0",
 		"markdown-it-anchor": "^9.2.0",
 		"markdown-it-checkbox": "^1.1.0",
-		"markdown-it-mermaid": "^0.2.5",
 		"markdown-it-plantuml": "^1.4.1",
 		"markdown-it-toc-done-right": "^4.2.0",
 		"mustache": "^4.0.1",
