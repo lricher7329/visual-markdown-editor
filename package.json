@@ -367,6 +367,7 @@
 	"scripts": {
 		"dev": "node build.js",
 		"lint:fix": "eslint 'src/**/*.ts' --fix",
+		"typecheck": "tsc --noEmit -p .",
 		"build": "rm -rf out && node build.js --mode=production",
 		"test": "vitest run",
 		"test:watch": "vitest",

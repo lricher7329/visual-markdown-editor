@@ -24,6 +24,8 @@ jobs:
       - name: Install publishing tools
         run: npm install -g @vscode/vsce ovsx
 
+      - run: yarn typecheck
+
       - run: yarn test
 
       - run: yarn build

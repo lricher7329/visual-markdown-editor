@@ -9,6 +9,7 @@ yarn build          # Production build (esbuild via build.js)
 yarn dev            # Rebuild the extension on change (esbuild watch)
 yarn test           # Run unit tests (vitest)
 yarn lint:fix       # Fix ESLint issues
+yarn typecheck      # Type-check with tsc (esbuild does not)
 yarn package        # Create .vsix package
 ```
 

@@ -7,15 +7,16 @@
 ## Current State
 
 - **Tier:** C — Direct (an `extensions/*` repo: land on `master`, no PRs; the publish workflow runs on `v*` tags)
-- **Local check:** `yarn lint:fix && yarn test && yarn build && yarn package` (what CI runs) plus `yarn tsc --noEmit -p .`
-- **Active milestone:** none — between milestones
+- **Local check:** `yarn lint:fix && yarn typecheck && yarn test && yarn build && yarn package` (what CI runs)
+- **Active milestone:** M2 — Leftover cleanup
 - **Branch:** `master`
-- **Next step:** check 2.5.0 inside VS Code (phase 2.1), then start M2 with the audit findings (phase 2.2)
+- **Next step:** M2 phases 2.2–2.6 in progress on `master`; phase 2.1 is a manual check in VS Code
 - **Updated:** 2026-10-11
 
 ## Milestones
 
-### M2 — Leftover cleanup  `[ ] planned`
+### M2 — Leftover cleanup  `[~] in progress`
+Branch: `master`
 - [ ] 2.1 — Check 2.5.0 inside VS Code; these couldn't be tested outside it:
   - the editor renders under the new CSP, and images in the document's folder still show
   - `⇧⌥Z` opens the citation picker, `⌘⇧Z` redoes, and `⌘V` pastes normally in the Search box
