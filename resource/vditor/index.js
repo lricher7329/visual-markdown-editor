@@ -40,7 +40,9 @@ handler.on("open", async (md) => {
   const editor = new Vditor('vditor', {
     value: md.content,
     _lutePath: md.rootPath + '/lute.min.js',
-    cdn: 'https://unpkg.com/vditor@3.11.2',
+    // Renderers (Mermaid, highlight.js, Graphviz, ...) are bundled under dist/js
+    // so the editor works offline; see "Vendored Vditor" in CLAUDE.md
+    cdn: md.rootPath,
     height: document.documentElement.clientHeight,
     outline: {
       enable: config.openOutline,

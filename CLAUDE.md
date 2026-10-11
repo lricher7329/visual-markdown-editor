@@ -49,6 +49,19 @@ Key events: `init`, `open`, `save`, `doSave`, `update`, `export`, `theme`, `scro
 | `src/common/handler.ts` | Webview ↔ Extension message bus |
 | `resource/vditor/` | Vditor editor HTML/JS/CSS (loaded into webview) |
 
+### Vendored Vditor
+
+`resource/vditor/` is a static copy of the editor. Vditor loads every renderer from its `cdn` option, which `index.js` points at `resource/vditor` itself, so the editor makes no network requests.
+
+| Path | Source |
+|------|--------|
+| `vditor.js`, `vditor.css`, `lute.min.js` | Custom build of the `vscode-vditor` 3.8.19 fork (`VDITOR_VERSION` 3.8.19); not identical to the published package |
+| `dist/js/{i18n,icons,katex}` | `vscode-vditor@3.8.19` (KaTeX fonts trimmed to woff2) |
+| `dist/js/{highlight.js,graphviz,echarts,abcjs,flowchart.js,plantuml}` | `vscode-vditor@3.8.19` npm package |
+| `dist/js/mermaid/mermaid.min.js` | `vditor@3.11.2` npm package (Mermaid 11.6.0) |
+
+When updating any of these, take renderer files from the package version that matches `vditor.js`: file names differ between Vditor releases (3.8 loads `highlight.js/highlight.pack.js` and `styles/<name>.css`; 3.11 ships `highlight.min.js` and `styles/<name>.min.css`).
+
 ### Zotero Integration
 
 The Zotero service reads directly from Zotero's SQLite databases (no API needed):

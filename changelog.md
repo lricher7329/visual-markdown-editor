@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Code blocks in the editor lost syntax highlighting: since 2.4.1 the editor requested highlight.js files that don't exist in the CDN package it pointed to. The bundled editor is Vditor 3.8.19, whose file layout differs from 3.11.2.
+- Mermaid diagrams, code highlighting, Graphviz, ECharts, ABC notation and flowcharts no longer depend on unpkg.com: they are bundled with the extension, so they render offline and where unpkg is slow or blocked.
 - Zotero citations failed to load with current Better BibTeX, which moved citation keys out of `better-bibtex.sqlite` into Zotero's own `citationKey` field. Keys are now read from Zotero's database; a legacy `better-bibtex.sqlite` is still used when present.
 - Zotero auto-detection never found a custom data directory on macOS and Windows (profile paths in `profiles.ini` were resolved against the wrong folder), and now falls back to `~/Zotero` when the configured directory is stale.
 - New Zotero items appear without a manual refresh: the library reloads when Zotero's database file changes. Loading the library is also about 3× faster.
