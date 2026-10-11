@@ -6,7 +6,7 @@
 	"publisher": "LawrenceRicher",
 	"icon": "images/logo.png",
 	"engines": {
-		"vscode": "^1.75.0"
+		"vscode": "^1.96.0"
 	},
 	"keywords": [
 		"markdown",
@@ -377,7 +377,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.0",
-		"@types/vscode": "^1.64.0",
+		"@types/vscode": "~1.96.0",
 		"@typescript-eslint/eslint-plugin": "^7.1.1",
 		"@typescript-eslint/parser": "^7.1.1",
 		"esbuild": "^0.28.2",
@@ -391,7 +391,7 @@
 	"dependencies": {
 		"cheerio": "^1.0.0",
 		"chrome-finder": "^1.0.7",
-		"file-type": "^19.6.0",
+		"file-type": "^21.3.4",
 		"fuse.js": "^7.1.0",
 		"highlight.js": "^11.10.0",
 		"katex": "^0.16.2",
