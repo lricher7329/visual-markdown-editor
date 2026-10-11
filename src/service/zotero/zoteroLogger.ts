@@ -130,9 +130,9 @@ class ZoteroLogger {
         this.statusBarItem.tooltip = this.currentStatus.message;
         this.statusBarItem.color = colors[this.currentStatus.status];
 
-        // Only show when Zotero is enabled
+        // Only show when Zotero is enabled and the status bar item is wanted
         const config = vscode.workspace.getConfiguration('document-viewer');
-        if (config.get('zotero.enabled', true)) {
+        if (config.get('zotero.enabled', true) && config.get('zotero.showStatusBar', true)) {
             this.statusBarItem.show();
         } else {
             this.statusBarItem.hide();

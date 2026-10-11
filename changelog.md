@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `document-viewer.zotero.showStatusBar` now hides the Zotero status bar item; it was ignored.
+- `document-viewer.editorTheme` accepts all ten editor themes. VS Code flagged seven of the theme picker's choices as invalid values.
+
+### Security
+- `document-viewer.pandoc.path` and `document-viewer.chromiumPath` can only be set in user settings, so a workspace can't point them at another program. If you set them in a workspace's settings, move them to your user settings.
+
 ### Removed
 - The `document-viewer.zotero.linkedAttachmentsBasePath` setting, which had no effect: the code that used it was never reachable.
 

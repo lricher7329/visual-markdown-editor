@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { ConfigKeys, CONFIG_PREFIX, EditorThemes, SAVE_DEBOUNCE_MS } from '../types/config';
 
 describe('ConfigKeys', () => {
@@ -19,6 +21,13 @@ describe('ConfigKeys', () => {
 });
 
 describe('EditorThemes', () => {
+    it('should all be accepted by the editorTheme setting', () => {
+        // The theme picker writes these names; VS Code flags values missing from the enum
+        const manifest = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf8'));
+        const setting = manifest.contributes.configuration.properties['document-viewer.editorTheme'];
+        expect(setting.enum).toEqual([...EditorThemes]);
+    });
+
     it('should include Auto theme', () => {
         expect(EditorThemes).toContain('Auto');
     });

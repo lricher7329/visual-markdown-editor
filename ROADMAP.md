@@ -32,7 +32,7 @@ Branch: `master`
   - Recently used citations never rise to the top: each picker builds a new `ZoteroSearchService` (`markdownEditorProvider.ts`), so recorded usage is discarded, and nothing saves it between sessions
   - Once usage history works, decide whether it should override an explicit title/author/year sort (`applyUsageBoost` re-sorts after `sortResults`)
   - Typing replaces `quickPick.items`, which likely clears multi-select checkmarks; confirm in VS Code
-- [ ] 2.4 — Settings:
+- [x] 2.4 — Settings (done 2026-10-11):
   - `document-viewer.zotero.showStatusBar` is never read
   - The `document-viewer.editorTheme` enum lists 3 of the 10 themes the theme picker writes, so VS Code flags valid choices as invalid
   - `document-viewer.pandoc.path` and `document-viewer.chromiumPath` should be `"scope": "machine"`, so workspace settings can't point them at another program

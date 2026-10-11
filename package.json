@@ -185,6 +185,7 @@
 				},
 				"document-viewer.chromiumPath": {
 					"type": "string",
+					"scope": "machine",
 					"description": "Set the chromium browser location for exporting markdown pdf."
 				},
 				"document-viewer.pdfMarginTop": {
@@ -217,7 +218,14 @@
 					"enum": [
 						"Auto",
 						"Light",
-						"Solarized"
+						"Solarized",
+						"Warm Light",
+						"Dim Light",
+						"One Dark",
+						"Github Dark",
+						"Nord",
+						"Monokai",
+						"Dracula"
 					],
 					"default": "Auto",
 					"markdownDescription": "The theme for the Markdown editor."
@@ -344,6 +352,7 @@
 				"document-viewer.pandoc.path": {
 					"type": "string",
 					"default": "",
+					"scope": "machine",
 					"description": "Path to Pandoc executable. Leave empty for auto-detection from PATH."
 				},
 				"document-viewer.pandoc.cslStyle": {
