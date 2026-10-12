@@ -5,7 +5,7 @@ All notable changes to the Visual Markdown Editor extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.7.0] - 2026-10-12
 
 ### Added
 - Comments stay attached to the text they're about. Commented text is highlighted in the editor and followed through edits, even when content is added above it or the file changes outside the editor. Clicking a comment scrolls to its text, and clicking highlighted text shows its comment.

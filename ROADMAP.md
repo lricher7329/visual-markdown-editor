@@ -10,8 +10,8 @@
 - **Local check:** `yarn lint:fix && yarn typecheck && yarn test && yarn build && yarn package` (what CI runs)
 - **Active milestone:** M3 — Comments stay attached to their text
 - **Branch:** `master`
-- **Next step:** M3 phase 3.5, a manual check in the editor; then release
-- **Updated:** 2026-10-11
+- **Next step:** M3 phase 3.5, a manual check in the editor (3.1–3.4 shipped in 2.7.0)
+- **Updated:** 2026-10-12
 
 ## Milestones
 
@@ -74,6 +74,7 @@ Branch: `milestone/modernize-and-harden` · Merged: 2026-10-11 · Released as v2
 
 ## Changelog
 
+- 2026-10-12 — Released v2.7.0 with M3 phases 3.1–3.4.
 - 2026-10-11 — M3 phases 3.1–3.4 done on `master` (browser-harness verified).
 - 2026-10-11 — M3 planned: anchor comments to their text.
 - 2026-10-11 — M2 complete: the manual checks (2.1) passed in Positron.
